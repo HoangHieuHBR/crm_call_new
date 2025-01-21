@@ -14,6 +14,6 @@ export default function createRootReducer(history) {
     setting,
     staff,
     call,
-    appUI
+    appUI,
   });
 }
