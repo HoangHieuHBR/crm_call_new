@@ -1,4 +1,4 @@
-import { createTheme as createMuiTheme } from '@mui/material/styles';
+import { createMuiTheme } from '@material-ui/core/styles';
 import { useSelector } from 'react-redux';
 
 const FORCE_LIGHT = true;
@@ -16,9 +16,9 @@ export const ThemeSupport = [
       main: '#0667BD',
       light: '#dae9ff',
       dark: '#004687',
-      contrastText: '#fff',
-    },
-  },
+      contrastText: '#fff'
+    }
+  }
 ];
 
 export const FontSupport = [
@@ -33,7 +33,7 @@ export const FontSupport = [
   'Monaco',
   'Geneva',
   'Helvetica',
-  'IBM Plex Sans',
+  'IBM Plex Sans'
 ];
 
 export const FontSizeSupport = [12, 13, 14, 15, 16];
@@ -41,25 +41,23 @@ export const FontSizeSupport = [12, 13, 14, 15, 16];
 export const createTheme = (
   font = DEFAULT_FONT,
   fontSize = DEFAULT_FONT_SIZE,
-  type = MODE,
+  type = MODE
 ) => {
-  const storageDarkTheme = useSelector((state) => state.setting.darkmode);
-  const storageFont = useSelector((state) => state.setting.font);
-  const storageFontSize = useSelector((state) => state.setting.fontSize);
-  const storagePrimaryColor = useSelector(
-    (state) => state.setting.primaryTheme,
-  );
+  const storageDarkTheme = useSelector(state => state.setting.darkmode);
+  const storageFont = useSelector(state => state.setting.font);
+  const storageFontSize = useSelector(state => state.setting.fontSize);
+  const storagePrimaryColor = useSelector(state => state.setting.primaryTheme);
   const themeId = storagePrimaryColor?.themeId ?? DEFAULT_PRIMARY_THEME_ID;
   const primaryTheme =
-    ThemeSupport.find((item) => item.themeId == themeId) ?? ThemeSupport[0];
+    ThemeSupport.find(item => item.themeId == themeId) ?? ThemeSupport[0];
 
-  const themeType = FORCE_LIGHT ? 'light' : (storageDarkTheme ?? type);
+  const themeType = FORCE_LIGHT ? 'light' : storageDarkTheme ?? type;
   const isLight = themeType == 'light';
 
   return createMuiTheme({
     typography: {
       fontFamily: storageFont ?? font,
-      fontSize: storageFontSize ?? fontSize,
+      fontSize: storageFontSize ?? fontSize
     },
     palette: {
       type: themeType,
@@ -67,13 +65,13 @@ export const createTheme = (
       background: {
         paper: isLight ? '#fff' : '#424242',
         default: isLight ? '#fff' : '#303030',
-        tabBarContainer: isLight ? '#efefef' : '#424242',
+        tabBarContainer: isLight ? '#efefef' : '#424242'
       },
       text: {
-        default: isLight ? '#303030' : '#fff',
+        default: isLight ? '#303030' : '#fff'
       },
       divider: isLight ? '#e5e5e5' : 'rgba(255, 255, 255, 0.12)',
-      dividerTabBar: isLight ? '#707070' : '#303030',
-    },
+      dividerTabBar: isLight ? '#707070' : '#303030'
+    }
   });
 };

@@ -1,21 +1,26 @@
 import { useStyles } from './styles';
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 
 import * as constantApp from '../../configs/constant';
 import * as windowSizeConfig from '../../configs/window.size.config';
 import * as ipc from '../../utils/ipc';
 import * as Actions from '../../actions';
 import * as remote from '@electron/remote';
+import IncommingCall from './IncomingCall';
+import CallList from './CallList';
+
+import { startGetGlobalConfig, cancelGetGlobalConfig } from '../controller';
 
 let durationTimer = null;
 export default function Call(props) {
   const dispatch = useDispatch();
   const classes = useStyles();
   const { t, i18n } = useTranslation();
-  const settings = useSelector((state) => state.call.globalSettings);
+  const settings = useSelector(state => state.call.globalSettings);
   const { purposes, products } = settings;
-  const currentCall = useSelector((state) => state.call.currentCall);
+  const currentCall = useSelector(state => state.call.currentCall);
   const { showForm, callData } = currentCall;
 
   const [initCompleted, setInitCompleted] = useState(false);
@@ -31,7 +36,7 @@ export default function Call(props) {
     const winBounds = currentWindow.getBounds();
     const distScreen = remote.screen.getDisplayNearestPoint({
       x: winBounds.x,
-      y: winBounds.y,
+      y: winBounds.y
     });
 
     const screenBounds = distScreen.workArea;
@@ -47,7 +52,7 @@ export default function Call(props) {
         // currentWindow.setResizable(true);
         currentWindow.setSize(
           windowSizeConfig.CALL_NORMAL_WIDTH,
-          windowSizeConfig.CALL_NORMAL_HEIGHT,
+          windowSizeConfig.CALL_NORMAL_HEIGHT
         );
 
         const position = currentWindow.getPosition();

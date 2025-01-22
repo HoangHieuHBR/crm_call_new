@@ -21,6 +21,7 @@ import {
   powerMonitor,
   screen,
 } from 'electron';
+import fs from 'fs';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
@@ -648,6 +649,10 @@ if (!isPrimaryInstance) {
       resumeMessengerCenterService(true);
     });
   }
+
+  ipcMain.handle('file-exists', (event, filePath) => {
+    return fs.existsSync(filePath);
+  });
 
   ipcMain.on('crm_call_center_event', (event, action, data) => {
     console.log('crm_call_center_event', action, data);

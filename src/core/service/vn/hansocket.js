@@ -132,7 +132,7 @@ export default class HanSocket {
     return aes.decrypt(data);
   }
 
-  sendPacket(packet: Packet) {
+  sendPacket(packet) {
     if (this.socket) {
       const xml = packet.xmlData();
       this.customLog('SEND: ', xml);

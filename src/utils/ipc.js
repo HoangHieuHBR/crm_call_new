@@ -1,4 +1,5 @@
-import { ipcRenderer, remote } from 'electron';
+import { ipcRenderer } from 'electron';
+import * as remote from '@electron/remote';
 import {
   COMMON_SYNC_ACTION_FROM_RENDER,
   COMMON_ASYNC_ACTION_FROM_RENDER,

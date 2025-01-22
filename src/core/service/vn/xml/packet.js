@@ -6,7 +6,7 @@ export default class Packet {
   }
   extensionXml(root) {}
 
-  xmlData(): string {
+  xmlData() {
     let root = xmlBuilder.create('XML', { encoding: 'utf-8' });
     let ver = root.ele('VER', null, VERSION);
     this.extensionXml(root);

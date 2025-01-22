@@ -1,4 +1,4 @@
-import { remote } from 'electron';
+import * as remote from '@electron/remote';
 import Requestor from '../requestor';
 import { encryptRsa } from '../../utils/rsa.utils.renderer';
 import moment from 'moment';

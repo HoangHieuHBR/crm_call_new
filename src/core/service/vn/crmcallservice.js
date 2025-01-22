@@ -232,7 +232,7 @@ class CRMCallServiceCenter {
     });
   }
 
-  _parserXMLAllAPI(xmlString: string) {
+  _parserXMLAllAPI(xmlString) {
     try {
       const jsonData = parser.xml2js(xmlString, { compact: false });
       const childXML = jsonData.elements[0].elements;

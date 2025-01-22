@@ -1,4 +1,4 @@
-import { remote } from 'electron';
+import * as remote from '@electron/remote';
 export const openLink = e => {
   e.preventDefault();
   remote.shell
