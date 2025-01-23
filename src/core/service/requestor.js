@@ -11,6 +11,7 @@ import CRMApi from './vn/server.api';
 
 function customLog(...params) {
   if (window.isFileLogger && window.crmcallRenderLog != null) {
+    print('window.isFileLogger >>>', window.isFileLogger);
     window.crmcallRenderLog.log(...params);
   } else {
     // console.log(...params);
@@ -37,12 +38,15 @@ class Requestor {
    */
   setupInterceptors() {
     const api = aXios.create({});
-    api.interceptors.request.use(function(config) {
+    api.interceptors.request.use(function (config) {
+      console.log('config >>>', config);
       return new Promise((resolve, reject) => {
         config.timeout = 10000;
         if (!config.headers) {
           config.headers = {};
         }
+
+        console.log('window.isKoreaMode >>>', window.isKoreaMode);
 
         config.headers['crm_country'] = window.isKoreaMode ? 'kr' : 'vn';
         let logHeaders = { ...config.headers };
@@ -64,7 +68,9 @@ class Requestor {
         }
         if (config.url?.includes('sign/auth')) {
           // not log
+          console.log('build if >>>', config.url);
         } else {
+          console.log('build else >>>', config.url);
           let body = new URLSearchParams(config.data ?? {}).toString();
           customLog(
             'Before Request >>>',
@@ -72,7 +78,7 @@ class Requestor {
             ' HEADERS >>> ',
             logHeaders,
             ' BODY >>>',
-            body
+            body,
           );
         }
 
@@ -81,19 +87,19 @@ class Requestor {
     });
 
     api.interceptors.response.use(
-      function(response) {
+      function (response) {
         customLog(
           'After Request >>>',
           response.config.url,
           ' Response >>> ',
-          response.data
+          response.data,
         );
         return Promise.resolve(response);
       },
-      function(error) {
+      function (error) {
         customLog('After Request error >>>', error);
         return Promise.reject(error);
-      }
+      },
     );
     return api;
   }
@@ -104,7 +110,7 @@ class Requestor {
    * @memberof Api
    */
   cancelAllRequest() {
-    this.uniqueRequest.forEach(item => {});
+    this.uniqueRequest.forEach((item) => {});
   }
 
   /**
@@ -149,7 +155,7 @@ class Requestor {
     payload = {},
     headers = {},
     uniqueRequest,
-    responseType = 'json'
+    responseType = 'json',
   ) {
     const cancelToken = aXios.CancelToken.source();
     this.uniqueRequest[uniqueRequest] = cancelToken;
@@ -161,8 +167,9 @@ class Requestor {
         params: payload,
         headers: headers,
         responseType: responseType,
-        cancelToken: cancelToken.token
+        cancelToken: cancelToken.token,
       });
+      console.log('response', response);
       this.removeTokenRequest(uniqueRequest);
       return Promise.resolve(response.data);
     } catch (error) {
@@ -189,13 +196,13 @@ class Requestor {
       url: endPoint,
       data: payload,
       cancelToken: cancelToken.token,
-      headers: headers
+      headers: headers,
     })
-      .then(response => {
+      .then((response) => {
         this.removeTokenRequest(uniqueRequest);
         return Promise.resolve(response.data);
       })
-      .catch(error => {
+      .catch((error) => {
         this.removeTokenRequest(uniqueRequest);
         return Promise.reject(error);
       });
@@ -209,13 +216,13 @@ class Requestor {
       url: endPoint,
       data: payload,
       cancelToken: cancelToken.token,
-      headers: headers
+      headers: headers,
     })
-      .then(response => {
+      .then((response) => {
         this.removeTokenRequest(uniqueRequest);
         return Promise.resolve(response.data);
       })
-      .catch(error => {
+      .catch((error) => {
         this.removeTokenRequest(uniqueRequest);
         return Promise.reject(error);
       });
@@ -236,7 +243,7 @@ class Requestor {
     payload = {},
     headers = {},
     uniqueRequest,
-    onUploadProgress
+    onUploadProgress,
   ) {
     const cancelToken = aXios.CancelToken.source();
     this.uniqueRequest[uniqueRequest] = cancelToken;
@@ -246,18 +253,18 @@ class Requestor {
       data: payload,
       cancelToken: cancelToken.token,
       headers: headers,
-      onUploadProgress: progressEvent => {
+      onUploadProgress: (progressEvent) => {
         if (onUploadProgress) {
           let percent = (progressEvent.loaded * 100) / progressEvent.total;
           onUploadProgress(percent);
         }
-      }
+      },
     })
-      .then(response => {
+      .then((response) => {
         this.removeTokenRequest(uniqueRequest);
         return Promise.resolve(response.data);
       })
-      .catch(error => {
+      .catch((error) => {
         this.removeTokenRequest(uniqueRequest);
         return Promise.reject(error);
       });
@@ -269,7 +276,7 @@ class Requestor {
     headers = {},
     uniqueRequest,
     destPath,
-    callback
+    callback,
   ) {
     const cancelToken = aXios.CancelToken.source();
     this.uniqueRequest[uniqueRequest] = cancelToken;
@@ -281,18 +288,18 @@ class Requestor {
       cancelToken: cancelToken.token,
       headers: headers,
       responseType: 'arraybuffer',
-      onDownloadProgress: progressEvent => {
+      onDownloadProgress: (progressEvent) => {
         if (callback) {
           let percent = (progressEvent.loaded * 100) / progressEvent.total;
           callback({
             percent: percent,
             downloading: true,
-            finished: false
+            finished: false,
           });
         }
-      }
+      },
     })
-      .then(response => {
+      .then((response) => {
         if (response.status == 200) {
           try {
             const buffer = Buffer.from(response.data);
@@ -302,7 +309,7 @@ class Requestor {
                   percent: 100,
                   downloading: false,
                   finished: true,
-                  path: destPath
+                  path: destPath,
                 });
               }
             });
@@ -313,7 +320,7 @@ class Requestor {
         this.removeTokenRequest(uniqueRequest);
         return Promise.resolve(response.status);
       })
-      .catch(error => {
+      .catch((error) => {
         this.removeTokenRequest(uniqueRequest);
         return Promise.reject(error);
       });

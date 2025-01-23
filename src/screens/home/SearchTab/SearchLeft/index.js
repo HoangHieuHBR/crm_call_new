@@ -254,7 +254,7 @@ export default function SearchLeft(props) {
           {searching ? (
             <Fragment>
               {t('Searching')}
-              <Grid container justify="center" style={{ width: 26 }}>
+              <Grid container justifyContent="center" style={{ width: 26 }}>
                 <CircularProgress color="inherit" size={16} />
               </Grid>
             </Fragment>

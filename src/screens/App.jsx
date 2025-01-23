@@ -9,15 +9,19 @@ import CssBaseline from '@material-ui/core/CssBaseline';
 import DateFnsUtils from '@date-io/date-fns';
 import { MuiPickersUtilsProvider } from '@material-ui/pickers';
 import * as Utils from '../utils';
+import * as ipc from '../utils/ipc';
 import * as Actions from '../actions';
 import * as constantsApp from '../configs/constant';
+import * as remote from '@electron/remote';
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import './App.css';
+import CRMApi from '../core/service/vn/server.api';
 
 import Login from './Login';
 import HomePage from './home';
 import Call from './Call';
+import { is } from 'date-fns/locale';
 
 window.currentDomainLog = 'unknown_render';
 const crmcallRenderLog = {
@@ -122,6 +126,16 @@ function MainApp() {
 }
 
 function CallApp() {
+  const accountInfo = ipc.getDomainUserIDPassword();
+  const modecountry = accountInfo?.mode_country;
+  window.isKoreaMode = modecountry == constantsApp.MODE_COUNTRY.korean;
+
+  if (window.isKoreaMode) {
+    CRMApi.updateDataFromRemoteV2();
+  } else {
+    CRMApi.updateDataFromRemote();
+  }
+
   const lang = ipc.sendIPCSync(constantsApp.ACTION_SYNC_GET_LANGUAGE, null);
 
   useEffect(() => {
@@ -149,6 +163,10 @@ export default function App() {
   const mainElement = document.getElementById('root');
   const isRoot = mainElement?.id === 'root';
   const store = configureStore();
+
+  if (isRoot) {
+    remote.getGlobal('ShareGlobalObject').attempDisableAutoLogin = false;
+  }
 
   return (
     <Provider store={store}>

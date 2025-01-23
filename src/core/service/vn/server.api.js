@@ -928,6 +928,7 @@ class CRMAPI {
 
   async postLoginAuth({ cancelToken, domain, userid, password, otpcode }) {
     let url = `${scheme}${domain}/${this.branches}/sign/auth`;
+    console.log('postLoginAuth', url);
     if (otpcode) {
       url = url + '?step=2&is_checking_otp=1';
     }

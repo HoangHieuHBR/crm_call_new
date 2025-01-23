@@ -21,7 +21,6 @@ import {
   powerMonitor,
   screen,
 } from 'electron';
-import fs from 'fs';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
@@ -33,6 +32,7 @@ import * as windowSizeConfig from '../configs/window.size.config';
 import crmcallServiceCenter from '../core/service/ko/crmcallservice';
 import CRMCallData from '../core/service/vn/crmcall.data';
 import { resolveHtmlPath } from './util';
+import { initialize, enable } from '@electron/remote/main';
 
 const WINDOWS_BG_COLOR = '#00000000';
 
@@ -77,7 +77,6 @@ if (!isPrimaryInstance) {
 } else {
   let isQuiting = false;
   let networkOnline = true;
-  let isBasicUpdater = true;
   let mainWindow: BrowserWindow | null = null;
   let tray: Tray | null = null;
   let timerLinuxTray: string | number | NodeJS.Timeout | null | undefined;
@@ -86,8 +85,9 @@ if (!isPrimaryInstance) {
   let latestCallIDWindows: string | null = null;
   let callWindowsMap: { [key: string]: BrowserWindow } = {};
 
+  initialize();
+
   function runAutoUpdate(domain: string | null, basicUpdate: boolean) {
-    isBasicUpdater = basicUpdate;
     if (domain == null || domain == '') {
       return;
     }
@@ -212,8 +212,9 @@ if (!isPrimaryInstance) {
       width: mainWindowState.width,
       height: mainWindowState.height,
       webPreferences: {
+        sandbox: false,
+        webSecurity: false,
         contextIsolation: false,
-        // enableRemoteModule: true,
         nodeIntegrationInWorker: true,
         nodeIntegration: true,
         webviewTag: true,
@@ -245,6 +246,8 @@ if (!isPrimaryInstance) {
     mainWindowState.manage(mainWindow);
 
     mainWindow.loadURL(resolveHtmlPath('index.html'));
+
+    enable(mainWindow.webContents);
 
     // @TODO: Use 'ready-to-show' event
     //        https://github.com/electron/electron/blob/master/docs/api/browser-window.md#using-ready-to-show-event
@@ -372,8 +375,9 @@ if (!isPrimaryInstance) {
       fullscreenable: false,
       resizable: false,
       webPreferences: {
+        sandbox: false,
+        webSecurity: false,
         contextIsolation: false,
-        // enableRemoteModule: true,
         nodeIntegrationInWorker: true,
         nodeIntegration: true,
         webviewTag: true,
@@ -650,11 +654,62 @@ if (!isPrimaryInstance) {
     });
   }
 
-  ipcMain.handle('file-exists', (event, filePath) => {
-    return fs.existsSync(filePath);
-  });
+  app
+    .whenReady()
+    .then(() => {
+      createWindow();
+      setupPowerMonitorHandlers();
 
-  ipcMain.on('crm_call_center_event', (event, action, data) => {
+      app.on('activate', () => {
+        // On macOS it's common to re-create a window in the app when the
+        // dock icon is clicked and there are no other windows open.
+        if (mainWindow === null) {
+          createWindow();
+        } else {
+          mainWindow.show();
+          if (process.platform === 'darwin') {
+            Object.values(callWindowsMap).forEach((window) => {
+              if (window) {
+                window.moveTop();
+              }
+            });
+          }
+        }
+      });
+    })
+    .catch(console.log);
+
+  // app.on('crm_call_center_event', (action, data) => {
+  //   console.log('crm_call_center_event', action, data);
+  //   sendEventToMainBrowserWindow(
+  //     constantsApp.MAIN_TO_RENDER_EVENT,
+  //     action,
+  //     data
+  //   );
+  // });
+
+  // app.on('crm_call_center_event_recent_callid', data => {
+  //   if (latestCallIDWindows) {
+  //     const newData = data.data;
+  //     if (newData) {
+  //       console.log('crm_call_center_event_recent_callid', newData);
+  //       crmcallServiceCenter.sendGetUserInfo({
+  //         callId: latestCallIDWindows,
+  //         phone: newData.number,
+  //         status: crmcallServiceCenter.currentMyStatus
+  //       });
+  //     }
+
+  //     sendEventToCallBrowserWindowWithCallID(
+  //       constantsApp.MAIN_TO_RENDER_EVENT,
+  //       constantsApp.ACTION_UPDATE_DATA_FROM_MAIN,
+  //       latestCallIDWindows,
+  //       data
+  //     );
+  //   }
+  // });
+
+  ipcMain.on('crm_call_center_event', (event, { action, data }) => {
     console.log('crm_call_center_event', action, data);
     sendEventToMainBrowserWindow(
       constantsApp.MAIN_TO_RENDER_EVENT,
@@ -687,6 +742,7 @@ if (!isPrimaryInstance) {
   ipcMain.on(
     constantsApp.COMMON_ASYNC_ACTION_FROM_RENDER,
     (_event, action, data) => {
+      console.log('COMMON_ASYNC_ACTION_FROM_RENDER', action, data);
       if (action == constantsApp.ACTION_ASYNC_LOGIN_SUCCESS) {
         const domain = data.domain;
         if (domain) {
@@ -820,6 +876,7 @@ if (!isPrimaryInstance) {
   ipcMain.on(
     constantsApp.COMMON_SYNC_ACTION_FROM_RENDER,
     (event, action, data) => {
+      console.log('COMMON_SYNC_ACTION_FROM_RENDER', action, data);
       if (action == constantsApp.ACTION_SYNC_GET_LANGUAGE) {
         event.returnValue = appPrefs.getLanguageDef();
       } else if (action == constantsApp.ACTION_SYNC_SET_LANGUAGE) {
@@ -926,29 +983,4 @@ if (!isPrimaryInstance) {
       }
     },
   );
-
-  app
-    .whenReady()
-    .then(() => {
-      createWindow();
-      setupPowerMonitorHandlers();
-
-      app.on('activate', () => {
-        // On macOS it's common to re-create a window in the app when the
-        // dock icon is clicked and there are no other windows open.
-        if (mainWindow === null) {
-          createWindow();
-        } else {
-          mainWindow.show();
-          if (process.platform === 'darwin') {
-            Object.values(callWindowsMap).forEach((window) => {
-              if (window) {
-                window.moveTop();
-              }
-            });
-          }
-        }
-      });
-    })
-    .catch(console.log);
 }

@@ -17,7 +17,7 @@ import {
   ACTION_ASYNC_CANCEL_LOGIN,
   ACTION_ASYNC_NETWORK_STATUS_CHANGED,
   ACTION_SYNC_OPEN_EMPTY_CALL_WINDOWS,
-  ACTION_SYNC_CLEAR_PASSWORD
+  ACTION_SYNC_CLEAR_PASSWORD,
 } from '../configs/constant';
 
 export function moveCurrentWindowsToTop() {
@@ -51,7 +51,7 @@ export function removeIpcEvent(event, listener) {
 
 export function clearAccount(clearAll) {
   sendIPCSync(ACTION_SYNC_CLEAR_ACCOUNT_INFO, {
-    clearAll
+    clearAll,
   });
 }
 
@@ -70,7 +70,7 @@ export function saveDomainUserIDPassword(
   extend,
   autoLogin,
   mode_country,
-  extraData
+  extraData,
 ) {
   sendIPCSync(ACTION_SYNC_SAVE_ACCOUNT_INFO, {
     domain,
@@ -79,7 +79,7 @@ export function saveDomainUserIDPassword(
     extend,
     autoLogin,
     mode_country,
-    extraData
+    extraData,
   });
 }
 
@@ -115,6 +115,7 @@ export function requestMakeCall(data) {
 }
 
 export function loginWithDomainUserIDPassword(data) {
+  console.log('loginWithDomainUserIDPassword', data);
   sendIPCAsync(ACTION_ASYNC_LOGIN_WITH_DOMAIN_ID, data);
 }
 
@@ -124,10 +125,18 @@ export function cancelLogin() {
 
 export function sendNetworkStatus() {
   sendIPCAsync(ACTION_ASYNC_NETWORK_STATUS_CHANGED, {
-    status: navigator.onLine ? 'online' : 'offline'
+    status: navigator.onLine ? 'online' : 'offline',
   });
 }
 
 export function demoCallKoService() {
   sendIPCAsync('TIENTH_DEMO_CALL_KO_SERVICE', null);
+}
+
+export function callCenterEvent(action, data) {
+  return ipcRenderer.send('crm_call_center_event', action, data);
+}
+
+export function callCenterEventResendCallId(data) {
+  return ipcRenderer.sendSync('crm_call_center_event_recent_callid', data);
 }

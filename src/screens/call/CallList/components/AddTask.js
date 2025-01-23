@@ -139,7 +139,7 @@ export default function AddTask(props) {
         >
           {loading ? (
             <>
-              <Grid container justify="center" style={{ width: 26 }}>
+              <Grid container justifyContent="center" style={{ width: 26 }}>
                 <CircularProgress color="inherit" size={16} />
               </Grid>
             </>

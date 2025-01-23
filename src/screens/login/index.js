@@ -10,7 +10,7 @@ import {
   Container,
   Typography,
   InputAdornment,
-  IconButton
+  IconButton,
 } from '@material-ui/core';
 import { Visibility, VisibilityOff } from '@material-ui/icons';
 import { useStyles } from './styles';
@@ -18,14 +18,16 @@ import { useTheme } from '@material-ui/core/styles';
 import {
   CssTextFieldStyleDL,
   CSSCheckBoxStyleDL,
-  CSSButtonStyleDL
+  CSSButtonStyleDL,
 } from './component.styles';
 
 import CRMAPI from '../../core/service/vn/server.api';
 import OTPDialog from './OTPDialog';
+import crmcallServiceCenter from '../../core/service/vn/crmcallservice';
+import IMGLogin from '../../../assets/img_login.svg';
+import LogoCRMCall from '../../../assets/logo_crm_call.svg';
 import * as constantApp from '../../configs/constant';
 import * as ipc from '../../utils/ipc';
-import crmcallServiceCenter from '../../core/service/vn/crmcallservice';
 import * as utils from '../../utils';
 import * as Actions from '../../actions';
 
@@ -63,7 +65,7 @@ export default function Login() {
 
   const [otpData, setOtpData] = useState({
     show: false,
-    msg: null
+    msg: null,
   });
 
   const theme = useTheme();
@@ -72,11 +74,11 @@ export default function Login() {
   const passwordRef = React.createRef();
   const extendNumberRef = React.createRef();
   const dispatch = useDispatch();
-  const extraInfo = useSelector(state => state.auth.extraInfo);
+  const extraInfo = useSelector((state) => state.auth.extraInfo);
   const classes = useStyles();
   const { t } = useTranslation();
 
-  useEffect(() => {
+  React.useEffect(() => {
     const accountInfo = ipc.getDomainUserIDPassword();
     const domain = accountInfo?.domain ?? '';
     const userid = accountInfo?.userId ?? '';
@@ -129,8 +131,8 @@ export default function Login() {
           userId: userid,
           password: password,
           extendNumber: extendNumber,
-          result: { ...extraData, extend: extendNumber }
-        }
+          result: { ...extraData, extend: extendNumber },
+        },
       };
       window.isKoreaMode = isKorea;
       dispatch(Actions.requestNavigateHomePage(modecountry, data));
@@ -147,7 +149,7 @@ export default function Login() {
         autologin,
         modecountry,
         null,
-        extraLoginWithoutOTP
+        extraLoginWithoutOTP,
       );
     } else {
       const validDomain = utils.validate.isDomain(domain);
@@ -177,7 +179,7 @@ export default function Login() {
     };
   }, []);
 
-  const setLoginPageIsShow = show => {
+  const setLoginPageIsShow = (show) => {
     remote.getGlobal('ShareGlobalObject').inLoginPage = show;
   };
 
@@ -189,33 +191,33 @@ export default function Login() {
     setOpenSnackbar(false);
   };
 
-  const showAlert = msg => {
+  const showAlert = (msg) => {
     SetErrorSnackbar(msg);
     setOpenSnackbar(true);
   };
 
-  const onChangeDomain = domain => {
+  const onChangeDomain = (domain) => {
     const validDomain = utils.validate.isDomain(domain);
     setDomain(validDomain.value);
     setDomainValid(validDomain.success);
     setErrorDomain('');
   };
 
-  const onChangeExtendNumber = extend => {
+  const onChangeExtendNumber = (extend) => {
     const validExtendNumber = utils.validate.isExtendNumber(extend);
     setExtendNumber(validExtendNumber.value);
     setExtendNumberValid(validExtendNumber.value);
     setErrorExtendNumber('');
   };
 
-  const onChangeID = id => {
+  const onChangeID = (id) => {
     const validId = utils.validate.isID(id);
     setID(validId.value);
     setIdValid(validId.value);
     setErrorID('');
   };
 
-  const onChangePass = value => {
+  const onChangePass = (value) => {
     const validPass = utils.validate.isPass(value, false);
     setPassWord(validPass.value);
     setPassValid(validPass.success);
@@ -230,7 +232,7 @@ export default function Login() {
     autologin,
     modecountry,
     otpcode,
-    extraLoginWithoutOTP = null
+    extraLoginWithoutOTP = null,
   ) => {
     if (loading) {
       CRMAPI.cancelRequest(checkCRMMode);
@@ -270,7 +272,7 @@ export default function Login() {
           extend,
           autologin,
           modecountry,
-          ''
+          '',
         );
         setLoading(true);
 
@@ -279,7 +281,7 @@ export default function Login() {
           CRMAPI.checkServerXMLExist({
             domain: domain,
             cancelToken: checkCRMMode,
-            callback: exist => {
+            callback: (exist) => {
               ipc.saveDomainUserIDPassword(
                 domain,
                 userid,
@@ -287,30 +289,32 @@ export default function Login() {
                 extend,
                 autologin,
                 exist ? MODE_COUNTRY.korean : MODE_COUNTRY.vietnamese,
-                ''
+                '',
               );
               setModeCountry(
-                exist ? MODE_COUNTRY.korean : MODE_COUNTRY.vietnamese
+                exist ? MODE_COUNTRY.korean : MODE_COUNTRY.vietnamese,
               );
               if (exist) {
+                console.log('LOGIN WITH CRM SERVER');
                 requestLoginCRMServer({
                   domain: domain,
                   userId: userid,
                   password: password,
                   extend: extend,
-                  otpcode: otpcode
+                  otpcode: otpcode,
                 });
               } else {
+                console.log('LOGIN WITH DOMAIN USER ID PASSWORD');
                 crmcallServiceCenter.loginWithDomainUserIdPassword(
                   domain,
                   userid,
                   password,
                   extend,
                   otpcode,
-                  extraLoginWithoutOTP
+                  extraLoginWithoutOTP,
                 );
               }
-            }
+            },
           });
         } catch (e) {
           setLoading(false);
@@ -350,7 +354,7 @@ export default function Login() {
           dataObj.extendNumber,
           gAutoLogin,
           gModeCountry,
-          dataObj.result
+          dataObj.result,
         );
 
         window.isKoreaMode = gModeCountry == MODE_COUNTRY.korean;
@@ -391,20 +395,20 @@ export default function Login() {
             ...dataObj.result,
             ...keepLoginData,
             extend: dataObj.result?.localphone,
-            username: dataObj.result?.username ?? ''
+            username: dataObj.result?.username ?? '',
           };
         } else {
           extraData = {
             ...dataObj.result,
             extend: dataObj.result?.localphone,
-            username: dataObj.result?.username ?? ''
+            username: dataObj.result?.username ?? '',
           };
         }
 
         CRMAPI.updateDataV2(dataObj.domain, {
           ...dataObj.result,
           extend: dataObj.localphone,
-          username: dataObj.result?.username ?? ''
+          username: dataObj.result?.username ?? '',
         });
 
         data.data.result = extraData;
@@ -416,7 +420,7 @@ export default function Login() {
           dataObj.extendNumber,
           gAutoLogin,
           gModeCountry,
-          extraData
+          extraData,
         );
         window.isKoreaMode = gModeCountry == MODE_COUNTRY.korean;
         dispatch(Actions.requestNavigateHomePage(gModeCountry, data));
@@ -446,18 +450,18 @@ export default function Login() {
     }
   };
 
-  const isNotEmpty = str => {
+  const isNotEmpty = (str) => {
     return str != null && str != '';
   };
 
-  const isRequireOTP = data => {
+  const isRequireOTP = (data) => {
     if (!data.success && data.code == 'otp') {
       return true;
     }
     return false;
   };
 
-  const isNotNeedOTP = data => {
+  const isNotNeedOTP = (data) => {
     if (
       data.success &&
       isNotEmpty(data.session) &&
@@ -469,18 +473,18 @@ export default function Login() {
     return false;
   };
 
-  const isNotSupportCRM = data => {
+  const isNotSupportCRM = (data) => {
     return data.crm_user == false;
   };
 
-  const isOTPNotRegisterYet = data => {
+  const isOTPNotRegisterYet = (data) => {
     if (!data.success && data.code == 'force') {
       return true;
     }
     return false;
   };
 
-  const requestLoginCRMServer = async data => {
+  const requestLoginCRMServer = async (data) => {
     const dataObj = data;
     keepLoginData = null;
     let result;
@@ -491,7 +495,7 @@ export default function Login() {
         domain: dataObj.domain,
         userid: dataObj.userId,
         password: dataObj.password,
-        otpcode: dataObj.otpcode
+        otpcode: dataObj.otpcode,
       });
     } catch (error) {
       console.log(error);
@@ -513,7 +517,7 @@ export default function Login() {
         session_gw: result.session ?? '',
         session_key: result.hmail_key ?? '',
         language: result.lang,
-        jwt: result.jwt
+        jwt: result.jwt,
       };
 
       keepLoginData = result.data;
@@ -524,7 +528,7 @@ export default function Login() {
         password: dataObj.password,
         extend: dataObj.extend,
         otpcode: dataObj.otpcode,
-        extraLoginWithoutOTP: null
+        extraLoginWithoutOTP: null,
       });
       return;
     } else if (isRequireOTP(result)) {
@@ -537,8 +541,8 @@ export default function Login() {
       setOtpData({ show: false, msg: '' });
       showAlert(
         t(
-          'Your account has not registered OTP. Please register OTP on web browser'
-        )
+          'Your account has not registered OTP. Please register OTP on web browser',
+        ),
       );
       return;
     }
@@ -552,32 +556,18 @@ export default function Login() {
     showPassword(!isShowPassword);
   };
 
-  const handleMouseDownPassword = event => {
+  const handleMouseDownPassword = (event) => {
     event.preventDefault();
   };
 
   return (
     <div className={classes.loginContainer}>
       <Container className={classes.imgLoginContainer}>
-        <img
-          src={
-            theme.palette.type == 'light'
-              ? './images/img_login.svg'
-              : './images/img_login.svg'
-          }
-          style={{ width: 320 }}
-        />
+        <img src={IMGLogin} style={{ width: 320 }} />
       </Container>
       <Container maxWidth="sm" className={classes.center}>
         <div className={classes.paper}>
-          <img
-            src={
-              theme.palette.type == 'light'
-                ? './images/logo_crm_call.svg'
-                : './images/logo_crm_call.svg'
-            }
-            style={{ width: 102, marginBottom: 10 }}
-          />
+          <img src={LogoCRMCall} style={{ width: 102, marginBottom: 10 }} />
           <Typography variant="h4" component="h2">
             {t('Welcome to')}
             <b>{t('CRM Call')}</b>
@@ -595,7 +585,7 @@ export default function Login() {
               error={!domainValid}
               helperText={errorDomain}
               value={domain}
-              onKeyPress={ev => {
+              onKeyPress={(ev) => {
                 if (ev.key === 'Enter') {
                   if (userIdRef) {
                     userIdRef.current.focus();
@@ -603,7 +593,7 @@ export default function Login() {
                   ev.preventDefault();
                 }
               }}
-              onChange={event => {
+              onChange={(event) => {
                 onChangeDomain(event.target.value);
               }}
             />
@@ -619,7 +609,7 @@ export default function Login() {
               error={!idValid}
               helperText={errorID}
               value={userid}
-              onKeyPress={ev => {
+              onKeyPress={(ev) => {
                 if (ev.key === 'Enter') {
                   if (passwordRef) {
                     passwordRef.current.focus();
@@ -627,7 +617,7 @@ export default function Login() {
                   ev.preventDefault();
                 }
               }}
-              onChange={event => {
+              onChange={(event) => {
                 onChangeID(event.target.value);
               }}
             />
@@ -655,9 +645,9 @@ export default function Login() {
                       {isShowPassword ? <Visibility /> : <VisibilityOff />}
                     </IconButton>
                   </InputAdornment>
-                )
+                ),
               }}
-              onKeyPress={ev => {
+              onKeyPress={(ev) => {
                 if (ev.key === 'Enter') {
                   doLogin(
                     domain,
@@ -665,12 +655,12 @@ export default function Login() {
                     password,
                     extendNumber,
                     autologin,
-                    modeCountry
+                    modeCountry,
                   );
                   ev.preventDefault();
                 }
               }}
-              onChange={event => {
+              onChange={(event) => {
                 onChangePass(event.target.value);
               }}
             />
@@ -686,7 +676,7 @@ export default function Login() {
               error={!extendNumberValid}
               helperText={errorExtendNumber}
               value={extendNumber}
-              onKeyPress={ev => {
+              onKeyPress={(ev) => {
                 if (ev.key === 'Enter') {
                   doLogin(
                     domain,
@@ -695,12 +685,12 @@ export default function Login() {
                     extendNumber,
                     autologin,
                     modeCountry,
-                    null
+                    null,
                   );
                   ev.preventDefault();
                 }
               }}
-              onChange={event => {
+              onChange={(event) => {
                 onChangeExtendNumber(event.target.value);
               }}
             />
@@ -709,19 +699,19 @@ export default function Login() {
               style={{
                 display: 'flex',
                 flexDirection: 'row',
-                justifyContent: 'space-between'
+                justifyContent: 'space-between',
               }}
             >
               <FormControlLabel
                 checked={autologin}
                 classes={{
-                  label: classes.label
+                  label: classes.label,
                 }}
                 control={
                   <CSSCheckBoxStyleDL
                     disabled={loading}
                     color="primary"
-                    onChange={event => {
+                    onChange={(event) => {
                       setAutoLogin(event.target.checked);
                     }}
                   />
@@ -742,14 +732,14 @@ export default function Login() {
                   extendNumber,
                   autologin,
                   modeCountry,
-                  null
+                  null,
                 )
               }
             >
               {loading ? (
                 <Fragment>
                   {t('Please waiting')}
-                  <Grid container justify="center" style={{ width: 26 }}>
+                  <Grid container justifyContent="center" style={{ width: 26 }}>
                     <CircularProgress color="inherit" size={16} />
                   </Grid>
                 </Fragment>
@@ -774,7 +764,7 @@ export default function Login() {
 
                 setOtpData({ show: false });
               }}
-              onConfirm={otp => {
+              onConfirm={(otp) => {
                 setOtpData({ ...otpData, msg: null });
                 doLogin(
                   domain,
@@ -783,7 +773,7 @@ export default function Login() {
                   extendNumber,
                   autologin,
                   modeCountry,
-                  otp
+                  otp,
                 );
               }}
             />

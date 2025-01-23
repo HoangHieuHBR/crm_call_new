@@ -166,6 +166,7 @@ class CRMCallServiceCenter {
     otpCode,
     extra_info
   ) {
+    console.log('run loginWithDomainUserIdPassword');
     this.isConnecting = true;
     this.domain = domain;
     this.userId = userId;
@@ -264,8 +265,10 @@ class CRMCallServiceCenter {
           });
         } else {
           if (this._processDNSXML(response.data)) {
+            console.log('start connect socket');
             this._connectWebsocketClient(isLogin, otpCode, extra_info);
           } else {
+            console.log('error process dns');
             this._broadcastListener(ACTION_LOGIN_SOCKET_EVENT, {
               code: SOCKET_ERROR_CODE.dns_error,
               errorMessage: error

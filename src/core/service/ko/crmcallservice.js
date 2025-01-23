@@ -17,9 +17,10 @@ import {
   EVENT_ID_TRANSFER_CALL_RESULT,
   MY_STATUS,
   CALL_EVENT,
-  CALL_DIRECTION
+  CALL_DIRECTION,
 } from '../../../configs/constant';
 import * as CRMPacket from './xml/crmpacket';
+import * as ipc from '../../../utils/ipc';
 
 var safeRetryLiveTimeout = 0;
 var ForwardCallInfo = {};
@@ -77,14 +78,13 @@ class CRMCallServiceCenter {
     this._parserXMLAllAPI(raw);
   }
 
-  
   removeEarlyPingTimeout() {
     const timer = this.timeoutPingList.shift();
     clearTimeout(timer);
   }
 
   stopAllPingTimeoutList() {
-    this.timeoutPingList.forEach(timer => {
+    this.timeoutPingList.forEach((timer) => {
       clearTimeout(timer);
     });
     this.timeoutPingList = [];
@@ -100,16 +100,20 @@ class CRMCallServiceCenter {
       port: 0,
       useHttps: false,
       aLiveTime: 30,
-      saveLogger: false
+      saveLogger: false,
     };
   }
 
   _broadcastListener(action, data) {
-    app.emit('crm_call_center_event', action, data);
+    // app.emit('crm_call_center_event', action, data);
+    // ipcRenderer.sendSync('crm_call_center_event', action, data);
+    ipc.callCenterEvent(action, data);
   }
 
   _broadcastListenerToRecentCallWindows(data) {
-    app.emit('crm_call_center_event_recent_callid', data);
+    // app.emit('crm_call_center_event_recent_callid', data);
+    // ipcRenderer.sendSync('crm_call_center_event_recent_callid', action, data);
+    ipc.callCenterEventResendCallId(data);
   }
 
   disconnectService() {
@@ -149,7 +153,7 @@ class CRMCallServiceCenter {
       this.safeRetryRelogin = 0;
       this.logoutWithStatus({
         code: 2,
-        msg: 'The server restarted or an internal error occurred'
+        msg: 'The server restarted or an internal error occurred',
       });
       return;
     }
@@ -159,7 +163,7 @@ class CRMCallServiceCenter {
       this.safeRetryRelogin = 0;
       this.logoutWithStatus({
         code: 2,
-        msg: 'The server restarted or an internal error occurred'
+        msg: 'The server restarted or an internal error occurred',
       });
       return;
     }
@@ -178,7 +182,7 @@ class CRMCallServiceCenter {
       console.log(
         'start reconnect socket retry = ',
         this.numberOfRetry,
-        timeout
+        timeout,
       );
       this.safeRetryRelogin++;
       this.numberOfRetry++;
@@ -203,7 +207,7 @@ class CRMCallServiceCenter {
         this.loginResultObject = null;
         this._broadcastListener(ACTION_DATA_SOCKET_EVENT, {
           eventId: EVENT_ID_LOGOUT_BY_OTHER_DEVICE,
-          status: status
+          status: status,
         });
         if (callback) {
           callback();
@@ -215,7 +219,7 @@ class CRMCallServiceCenter {
       this.loginResultObject = null;
       this._broadcastListener(ACTION_DATA_SOCKET_EVENT, {
         eventId: EVENT_ID_LOGOUT_BY_OTHER_DEVICE,
-        status: status
+        status: status,
       });
       if (callback) {
         callback();
@@ -239,7 +243,7 @@ class CRMCallServiceCenter {
     password,
     extendNumber,
     otpCode,
-    extra_info
+    extra_info,
   ) {
     this.iamLogout = false;
     this.loginResultObject = null;
@@ -271,7 +275,7 @@ class CRMCallServiceCenter {
             jwt: extra_info?.jwt,
             hmail: extra_info?.hmail,
             session: extra_info?.session,
-            userID: this.userId
+            userID: this.userId,
           });
         } else {
           loginPacket = new CRMPacket.ReLoginPacket({
@@ -283,29 +287,29 @@ class CRMCallServiceCenter {
             jwt: extra_info?.jwt,
             hmail: extra_info?.hmail,
             session: extra_info?.session,
-            userID: this.userId
+            userID: this.userId,
           });
         }
 
         this.tcpSocket.sendPacket(loginPacket);
       },
-      socketDisconnectWithError: error => {
+      socketDisconnectWithError: (error) => {
         if (!this.loginResultObject) {
           this.disconnectService();
           this._broadcastListener(ACTION_ERROR_SOCKET_EVENT, {
             code: SOCKET_ERROR_CODE.customError,
             errorMessage:
-              'An error occurred during login. Please try again later'
+              'An error occurred during login. Please try again later',
           });
         } else {
           this.disconnectService();
           this.reconnectService(false);
         }
       },
-      onReceivedPacket: xmlString => {
+      onReceivedPacket: (xmlString) => {
         const raw = xmlString.toString('utf8').trim();
         this._parserXMLAllAPI(raw);
-      }
+      },
     });
   }
 
@@ -313,7 +317,7 @@ class CRMCallServiceCenter {
     try {
       const jsonData = parser.xml2js(xmlString, { compact: false });
       const childXML = jsonData.elements[0].elements;
-      childXML.forEach(element => {
+      childXML.forEach((element) => {
         if (element.name == 'USER') {
           const childUser = element.elements;
           XMLProcess.processUser(this, childUser);
@@ -335,7 +339,7 @@ class CRMCallServiceCenter {
               cur: attrs['CUR'] ?? '',
               next: attrs['NEXT'] ?? '',
               number: attrs['NUMBER'] ?? '',
-              callid: attrs['CALLID']
+              callid: attrs['CALLID'],
             };
           }
           response.data = data;
@@ -348,31 +352,36 @@ class CRMCallServiceCenter {
       this.disconnectService();
       this._broadcastListener(ACTION_ERROR_SOCKET_EVENT, {
         code: SOCKET_ERROR_CODE.customError,
-        errorMessage: err
+        errorMessage: err,
       });
     }
   }
 
   _startCRMCenter(isLogin, serverXmlRequest, otpCode, extra_info) {
     if (serverXmlRequest) {
+      console.log('start request server.xml');
       this._resolveDNSFromHost('http://', this.domain, (response, error) => {
         if (error != null) {
+          console.log('error request server.xml', error);
           this._broadcastListener(ACTION_LOGIN_SOCKET_EVENT, {
             code: SOCKET_ERROR_CODE.dns_error,
-            errorMessage: error
+            errorMessage: error,
           });
         } else {
           if (this._processDNSXML(response.data)) {
+            console.log('start connect socket');
             this._connectWebsocketClient(isLogin, otpCode, extra_info);
           } else {
+            console.log('error process server.xml');
             this._broadcastListener(ACTION_LOGIN_SOCKET_EVENT, {
               code: SOCKET_ERROR_CODE.dns_error,
-              errorMessage: error
+              errorMessage: error,
             });
           }
         }
       });
     } else {
+      console.log('start connect socket');
       this._connectWebsocketClient(isLogin, otpCode, extra_info);
     }
   }
@@ -383,7 +392,7 @@ class CRMCallServiceCenter {
       const jsonData = parser.xml2js(dataResponse, { compact: false });
 
       const childXML = jsonData.elements[0].elements;
-      childXML.forEach(element => {
+      childXML.forEach((element) => {
         if (element.name == 'SERVERINFO') {
           const attrs = element.attributes;
           if (attrs) {
@@ -424,7 +433,7 @@ class CRMCallServiceCenter {
       this.cancelTokenDNSSource = CancelToken.source();
       const response = await axios.get(url, {
         timeout: 10000,
-        cancelToken: this.cancelTokenDNSSource.token
+        cancelToken: this.cancelTokenDNSSource.token,
       });
       this.cancelTokenDNSSource = null;
       callback(response, null);
@@ -465,7 +474,7 @@ class CRMCallServiceCenter {
   sendGetUserInfo({ callId, phone, status }) {
     if (this.isAuthenticated) {
       this.tcpSocket.sendPacket(
-        new CRMPacket.GetUserInfoPacket(callId, phone, status)
+        new CRMPacket.GetUserInfoPacket(callId, phone, status),
       );
     }
   }
@@ -479,7 +488,7 @@ class CRMCallServiceCenter {
   sendTranferNumberWithPhone({ from, to, phone, callid }) {
     if (this.isAuthenticated) {
       this.tcpSocket.sendPacket(
-        new CRMPacket.TransferNumberPacket(from, to, phone, callid)
+        new CRMPacket.TransferNumberPacket(from, to, phone, callid),
       );
     }
   }
@@ -487,7 +496,7 @@ class CRMCallServiceCenter {
   sendMakeCall({ userKey, phone }) {
     if (this.isAuthenticated) {
       this.tcpSocket.sendPacket(
-        new CRMPacket.TransferCallPacket(userKey, phone)
+        new CRMPacket.TransferCallPacket(userKey, phone),
       );
     }
   }
@@ -496,7 +505,7 @@ class CRMCallServiceCenter {
 const XMLProcess = {
   processUser(crmcallService, rootElement) {
     let response = {};
-    rootElement.forEach(element => {
+    rootElement.forEach((element) => {
       if (element.name == 'LOGIN') {
         response.apiID = 'LOGIN';
         const attrs = element.attributes;
@@ -511,7 +520,7 @@ const XMLProcess = {
           }
           login = {
             result: statusCode,
-            errorMessage: errorMessage
+            errorMessage: errorMessage,
           };
         } else {
           login = {
@@ -531,8 +540,8 @@ const XMLProcess = {
               sex: attrs['SEX'] ?? '1',
               telephone: attrs['TELEPHONE'] ?? '',
               userkey: attrs['USERKEY'] ?? '',
-              username: attrs['USERNAME'] ?? ''
-            }
+              username: attrs['USERNAME'] ?? '',
+            },
           };
         }
         response.login = login;
@@ -558,7 +567,7 @@ const XMLProcess = {
             phonetype: strPhoneType,
             rating: attrs['RATING'] ?? '',
             type: attrs['TYPE'] ?? '',
-            customerid: attrs['CUSTOMER_ID'] ?? ''
+            customerid: attrs['CUSTOMER_ID'] ?? '',
           };
 
           if (
@@ -576,14 +585,14 @@ const XMLProcess = {
         const staffElements = element.elements;
         let staffs = [];
         if (staffElements) {
-          staffElements.forEach(staffElement => {
+          staffElements.forEach((staffElement) => {
             if (staffElement.name == 'STAFF') {
               const attrs = staffElement.attributes;
               if (attrs) {
                 staffs.push({
                   staff_user_name: attrs['STAFF_NAME'],
                   staff_cn: attrs['STAFF_CN'],
-                  staff_no: attrs['STAFF_NO']
+                  staff_no: attrs['STAFF_NO'],
                 });
               }
             }
@@ -598,7 +607,7 @@ const XMLProcess = {
         if (element) {
           const statusElement = element.elements;
           if (statusElement) {
-            statusElement.forEach(status => {
+            statusElement.forEach((status) => {
               if (status.name == 'STATUS') {
                 const attrs = status.attributes;
                 if (attrs) {
@@ -608,7 +617,7 @@ const XMLProcess = {
                     no = parseInt(no.substring(3));
                     statusList.push({
                       extend: attrs['EXT'],
-                      staff_no: no
+                      staff_no: no,
                     });
                   }
                 }
@@ -632,13 +641,13 @@ const XMLProcess = {
   },
   processSip(crmcallService, rootElement) {
     let response = {};
-    rootElement.forEach(element => {
+    rootElement.forEach((element) => {
       if (element.name == 'SIPLOGIN') {
         response.apiID = 'SIPLOGIN';
         const attrs = element.attributes;
         let data = {
           result: 0,
-          errorMessage: 'Sip Login Failed'
+          errorMessage: 'Sip Login Failed',
         };
         if (attrs) {
           data.result = attrs['RESULT'] ?? 0;
@@ -656,7 +665,7 @@ const XMLProcess = {
             time: TextUtils.timeFromTimeStampSafe(attrs['TIME'] ?? ''),
             from: attrs['FROM'] ?? '',
             to: attrs['TO'] ?? '',
-            pickupid: attrs['PICKUPID'] ?? ''
+            pickupid: attrs['PICKUPID'] ?? '',
           };
         }
         response.data = data;
@@ -667,7 +676,7 @@ const XMLProcess = {
         if (attrs) {
           data = {
             result: attrs['RESULT'] == 'true',
-            callid: attrs['CALLID'] ?? ''
+            callid: attrs['CALLID'] ?? '',
           };
         }
         response.data = data;
@@ -684,7 +693,7 @@ const XMLProcess = {
   },
   processAlarm(crmcallService, rootElement) {
     let response = {};
-    rootElement.forEach(element => {
+    rootElement.forEach((element) => {
       if (element.name == 'LIVE') {
         response.apiID = 'LIVE';
         const attrs = element.attributes;
@@ -703,7 +712,7 @@ const XMLProcess = {
             cur: attrs['CUR'] ?? '',
             next: attrs['NEXT'] ?? '',
             number: attrs['NUMBER'] ?? '',
-            callid: attrs['CALLID']
+            callid: attrs['CALLID'],
           };
         }
         response.data = data;
@@ -715,7 +724,7 @@ const XMLProcess = {
     } else if (response.apiID == 'TRANSFERNUMBER') {
       PacketListener.onReceivedTransferNumberPacket(crmcallService, response);
     }
-  }
+  },
 };
 
 const PacketListener = {
@@ -724,7 +733,7 @@ const PacketListener = {
       crmcallService.disconnectService();
       crmcallService._broadcastListener(ACTION_LOGIN_SOCKET_EVENT, {
         code: SOCKET_ERROR_CODE.customError,
-        errorMessage: response.data.errorMessage
+        errorMessage: response.data.errorMessage,
       });
     }
   },
@@ -732,7 +741,7 @@ const PacketListener = {
     if (response.login.result == 1) {
       let newData = {
         ...crmcallService.loginResultObject,
-        ...response.login.data
+        ...response.login.data,
       };
       //login success
       crmcallService.lastLoginTime = Date.now();
@@ -744,8 +753,8 @@ const PacketListener = {
           userId: crmcallService.userId,
           password: crmcallService.password,
           extendNumber: crmcallService.extendNumber,
-          result: newData
-        }
+          result: newData,
+        },
       });
       crmcallService.isAuthenticated = true;
       crmcallService.loginResultObject = newData;
@@ -754,7 +763,7 @@ const PacketListener = {
       crmcallService.disconnectService();
       crmcallService._broadcastListener(ACTION_LOGIN_SOCKET_EVENT, {
         code: SOCKET_ERROR_CODE.customError,
-        errorMessage: response.login.errorMessage
+        errorMessage: response.login.errorMessage,
       });
     }
   },
@@ -768,14 +777,14 @@ const PacketListener = {
     }
     crmcallServiceCenter.logoutWithStatus({
       code: 1,
-      msg: 'You have already logged in with another device'
+      msg: 'You have already logged in with another device',
     });
   },
   onReceivedExtendOnlinePacket(crmcallService, response) {
     if (TextUtils.isNotEmpty(response.data)) {
       crmcallService._broadcastListener(ACTION_DATA_SOCKET_EVENT, {
         eventId: EVENT_ID_EXTEND_ONLINE,
-        data: response.data
+        data: response.data,
       });
     }
   },
@@ -792,7 +801,7 @@ const PacketListener = {
               callData.direction == CALL_DIRECTION.INBOUND
                 ? callData.from
                 : callData.to,
-            status: crmcallService.currentMyStatus
+            status: crmcallService.currentMyStatus,
           });
           if (callData.direction == CALL_DIRECTION.INBOUND) {
             crmcallService.lastCallInboundObj = callData;
@@ -816,11 +825,11 @@ const PacketListener = {
 
       console.log(
         'crmcallService.lastCallInboundObj',
-        crmcallService.lastCallInboundObj
+        crmcallService.lastCallInboundObj,
       );
       console.log(
         'crmcallService.lastCallOutboundObj',
-        crmcallService.lastCallOutboundObj
+        crmcallService.lastCallOutboundObj,
       );
 
       console.log('send transfer call 11111sssss...................');
@@ -865,7 +874,7 @@ const PacketListener = {
             from: callData.to,
             to: ForwardCallInfo['agentID'],
             phone: (ForwardCallInfo['number'] = callData.from),
-            callid: ForwardCallInfo['callId']
+            callid: ForwardCallInfo['callId'],
           });
         }
 
@@ -894,7 +903,7 @@ const PacketListener = {
       if (ignoreCallEvent == false) {
         crmcallService._broadcastListener(ACTION_DATA_SOCKET_EVENT, {
           eventId: EVENT_ID_CALL_EVENT,
-          data: callData
+          data: callData,
         });
       }
     }
@@ -903,7 +912,7 @@ const PacketListener = {
     if (response.data) {
       crmcallService._broadcastListener(ACTION_DATA_SOCKET_EVENT, {
         eventId: EVENT_ID_TRANSFER_CALL_RESULT,
-        data: response.data
+        data: response.data,
       });
     }
   },
@@ -919,7 +928,7 @@ const PacketListener = {
       // });
       crmcallService._broadcastListenerToRecentCallWindows({
         eventId: EVENT_ID_UPDATE_PHONE_NUMBER,
-        data: data
+        data: data,
       });
     }
   },
@@ -930,10 +939,10 @@ const PacketListener = {
     if (response.data) {
       crmcallService._broadcastListener(ACTION_DATA_SOCKET_EVENT, {
         eventId: EVENT_ID_USER_INFO,
-        data: response.data
+        data: response.data,
       });
     }
-  }
+  },
 };
 
 const crmcallServiceCenter = new CRMCallServiceCenter();

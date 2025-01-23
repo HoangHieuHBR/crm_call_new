@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { Switch, Route, useHistory } from 'react-router-dom';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 import { useTheme } from '@material-ui/core/styles';
 import crmcallServiceCenter from '../../core/service/vn/crmcallservice';
 import * as constantApp from '../../configs/constant';
@@ -54,7 +54,7 @@ export default function Home() {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const classes = useStyles();
-  const history = useHistory();
+  const navigate = useNavigate();
 
   const [showSetting, setShowSetting] = useState(false);
 
@@ -348,8 +348,8 @@ export default function Home() {
   }, [userInfo]);
 
   useEffect(() => {
-    if (history.location.pathname != activeMenu) {
-      history.push(activeMenu);
+    if (activeMenu) {
+      navigate(activeMenu);
     }
   }, [activeMenu]);
 
@@ -585,7 +585,7 @@ export default function Home() {
             width: '100%'
           }}
         >
-          <Switch>
+          <Routes>
             {routes.map((route, index) => (
               <Route
                 key={index}
@@ -594,7 +594,7 @@ export default function Home() {
                 children={<route.content />}
               />
             ))}
-          </Switch>
+          </Routes>
         </div>
       </div>
 

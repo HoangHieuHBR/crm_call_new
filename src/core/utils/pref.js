@@ -217,14 +217,14 @@ var algorithm = 'aes-256-ctr';
 var password = 'a4e1112f45e84f785358bb86ba750f48';
 
 export function encryptAes(text) {
-  var cipher = crypto.createCipher(algorithm, password);
+  var cipher = crypto.createCipheriv(algorithm, password);
   var crypted = cipher.update(text, 'utf8', 'hex');
   crypted += cipher.final('hex');
   return crypted;
 }
 
 function decryptAes(text) {
-  var decipher = crypto.createDecipher(algorithm, password);
+  var decipher = crypto.createDecipheriv(algorithm, password);
   var dec = decipher.update(text, 'hex', 'utf8');
   dec += decipher.final('utf8');
   return dec;

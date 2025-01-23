@@ -5,9 +5,9 @@ import { styles } from './styles';
 import { List, ListItem, ListItemText, ListItemIcon } from '@material-ui/core';
 import AttachFile from '@material-ui/icons/AttachFile';
 import CRMApi from '../../../core/service/vn/server.api';
+import * as remote from '@electron/remote';
 
 class EmailView extends Component {
- const remote = window.require('@electron/remote');
 
   constructor(props) {
     super(props);

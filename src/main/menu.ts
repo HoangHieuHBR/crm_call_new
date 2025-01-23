@@ -20,6 +20,11 @@ export default class MenuBuilder {
   }
 
   buildMenu(): Menu {
+    if (process.platform == 'win32' || process.platform == 'linux') {
+      Menu.setApplicationMenu(null);
+      return Menu.buildFromTemplate([]);
+    }
+
     if (
       process.env.NODE_ENV === 'development' ||
       process.env.DEBUG_PROD === 'true'
