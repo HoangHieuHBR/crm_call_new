@@ -33,6 +33,7 @@ import crmcallServiceCenter from '../core/service/ko/crmcallservice';
 import CRMCallData from '../core/service/vn/crmcall.data';
 import { resolveHtmlPath } from './util';
 import { initialize, enable } from '@electron/remote/main';
+import eventEmitter from '../utils/eventEmitter';
 
 const WINDOWS_BG_COLOR = '#00000000';
 
@@ -679,37 +680,7 @@ if (!isPrimaryInstance) {
     })
     .catch(console.log);
 
-  // app.on('crm_call_center_event', (action, data) => {
-  //   console.log('crm_call_center_event', action, data);
-  //   sendEventToMainBrowserWindow(
-  //     constantsApp.MAIN_TO_RENDER_EVENT,
-  //     action,
-  //     data
-  //   );
-  // });
-
-  // app.on('crm_call_center_event_recent_callid', data => {
-  //   if (latestCallIDWindows) {
-  //     const newData = data.data;
-  //     if (newData) {
-  //       console.log('crm_call_center_event_recent_callid', newData);
-  //       crmcallServiceCenter.sendGetUserInfo({
-  //         callId: latestCallIDWindows,
-  //         phone: newData.number,
-  //         status: crmcallServiceCenter.currentMyStatus
-  //       });
-  //     }
-
-  //     sendEventToCallBrowserWindowWithCallID(
-  //       constantsApp.MAIN_TO_RENDER_EVENT,
-  //       constantsApp.ACTION_UPDATE_DATA_FROM_MAIN,
-  //       latestCallIDWindows,
-  //       data
-  //     );
-  //   }
-  // });
-
-  ipcMain.on('crm_call_center_event', (event, { action, data }) => {
+  eventEmitter.on('crm_call_center_event', (action, data) => {
     console.log('crm_call_center_event', action, data);
     sendEventToMainBrowserWindow(
       constantsApp.MAIN_TO_RENDER_EVENT,
@@ -718,7 +689,7 @@ if (!isPrimaryInstance) {
     );
   });
 
-  ipcMain.on('crm_call_center_event_recent_callid', (event, data) => {
+  eventEmitter.on('crm_call_center_event_recent_callid', (data) => {
     if (latestCallIDWindows) {
       const newData = data.data;
       if (newData) {
@@ -738,6 +709,36 @@ if (!isPrimaryInstance) {
       );
     }
   });
+
+  // ipcMain.on('crm_call_center_event', (event, { action, data }) => {
+  //   console.log('crm_call_center_event', action, data);
+  //   sendEventToMainBrowserWindow(
+  //     constantsApp.MAIN_TO_RENDER_EVENT,
+  //     action,
+  //     data,
+  //   );
+  // });
+
+  // ipcMain.on('crm_call_center_event_recent_callid', (event, data) => {
+  //   if (latestCallIDWindows) {
+  //     const newData = data.data;
+  //     if (newData) {
+  //       console.log('crm_call_center_event_recent_callid', newData);
+  //       crmcallServiceCenter.sendGetUserInfo({
+  //         callId: latestCallIDWindows,
+  //         phone: newData.number,
+  //         status: crmcallServiceCenter.currentMyStatus,
+  //       });
+  //     }
+
+  //     sendEventToCallBrowserWindowWithCallID(
+  //       constantsApp.MAIN_TO_RENDER_EVENT,
+  //       constantsApp.ACTION_UPDATE_DATA_FROM_MAIN,
+  //       latestCallIDWindows,
+  //       data,
+  //     );
+  //   }
+  // });
 
   ipcMain.on(
     constantsApp.COMMON_ASYNC_ACTION_FROM_RENDER,

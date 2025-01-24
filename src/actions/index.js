@@ -6,6 +6,7 @@ export function requestNavigateHomePage(
   extraInfo = {},
   authentication = true
 ) {
+  console.log('requestNavigateHomePage', user, extraInfo, authentication);
   return {
     type: actionTypes.NAVIGATE_HOME_PAGE,
     user,

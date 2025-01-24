@@ -1,6 +1,6 @@
 import parser from 'xml-js';
 import axios from 'axios';
-import { app } from 'electron';
+import { app, ipcRenderer } from 'electron';
 import log from 'electron-log';
 import TCPConnection from './tcp-connection';
 import TextUtils from '../../utils/text.utils';
@@ -20,7 +20,7 @@ import {
   CALL_DIRECTION,
 } from '../../../configs/constant';
 import * as CRMPacket from './xml/crmpacket';
-import * as ipc from '../../../utils/ipc';
+import eventEmitter from '../../../utils/eventEmitter';
 
 var safeRetryLiveTimeout = 0;
 var ForwardCallInfo = {};
@@ -106,14 +106,14 @@ class CRMCallServiceCenter {
 
   _broadcastListener(action, data) {
     // app.emit('crm_call_center_event', action, data);
-    // ipcRenderer.sendSync('crm_call_center_event', action, data);
-    ipc.callCenterEvent(action, data);
+    eventEmitter.emit('crm_call_center_event', action, data);
+    // ipcRenderer.send('crm_call_center_event', action, data);
   }
 
   _broadcastListenerToRecentCallWindows(data) {
     // app.emit('crm_call_center_event_recent_callid', data);
-    // ipcRenderer.sendSync('crm_call_center_event_recent_callid', action, data);
-    ipc.callCenterEventResendCallId(data);
+    eventEmitter.emit('crm_call_center_event_recent_callid', data);
+    // ipcRenderer.sendSync('crm_call_center_event_recent_callid', data);
   }
 
   disconnectService() {

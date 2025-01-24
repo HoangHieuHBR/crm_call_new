@@ -29,6 +29,7 @@ class CRMAPI {
   }
 
   setupLogger(domain) {
+    console.log('setupLogger domain >>>', domain);
     if (window.crmcallRenderLog != null) {
       window.currentDomainLog = `${domain}_render`;
       window.crmcallRenderLog.transports.file.level = 'info';
@@ -61,7 +62,7 @@ class CRMAPI {
 
     remote.getGlobal('ShareGlobalObject').loginGlobal = {
       domain: domain,
-      data: data
+      data: data,
     };
   }
 
@@ -89,9 +90,11 @@ class CRMAPI {
       this.userKey = '';
     }
 
+    console.log('updateDataV2', data);
+
     remote.getGlobal('ShareGlobalObject').loginGlobal = {
       domain: domain,
-      data: data
+      data: data,
     };
   }
 
@@ -172,7 +175,7 @@ class CRMAPI {
     status,
     parent_name,
     website,
-    direction
+    direction,
   ) {
     let values = [];
     values.push(`limit=${limit}`);
@@ -273,7 +276,7 @@ class CRMAPI {
     status,
     parent_name,
     website,
-    direction
+    direction,
   }) {
     let paramString = this._buildParamList(
       limit,
@@ -296,7 +299,7 @@ class CRMAPI {
       status,
       parent_name,
       website,
-      direction
+      direction,
     );
 
     const url = `${this._buildHost()}/${this.branches}/_cti/activity/history/${
@@ -327,7 +330,7 @@ class CRMAPI {
     status,
     parent_name,
     website,
-    direction
+    direction,
   }) {
     let paramString = this._buildParamList(
       limit,
@@ -350,7 +353,7 @@ class CRMAPI {
       status,
       parent_name,
       website,
-      direction
+      direction,
     );
 
     const url = `${this._buildHost()}/${this.branches}/_cti/activity/search/${
@@ -426,7 +429,7 @@ class CRMAPI {
     page = 1,
     sort = 'name',
     order = 'desc',
-    assignToMe = false
+    assignToMe = false,
   }) {
     let values = [];
     values.push(`type=${type ?? ''}`);
@@ -454,15 +457,16 @@ class CRMAPI {
     customerType = 'employee',
     phoneType = '1',
     phoneExt = '',
-    customerName = ''
+    customerName = '',
   }) {
     const kCountryCode = window.isKoreaMode ? '82' : '84';
 
     let method = 'put';
     let url = `${this._buildHost()}/${
       this.branches
-    }/_cti/customer/management/customer_field/${this.cn}/${customerCode ??
-      ''}/phone`;
+    }/_cti/customer/management/customer_field/${this.cn}/${
+      customerCode ?? ''
+    }/phone`;
 
     let body = new FormData();
     body.append('id', customerid);
@@ -541,7 +545,7 @@ class CRMAPI {
 
     const data = [...body.entries()];
     const asString = data
-      .map(x => `${encodeURIComponent(x[0])}=${encodeURIComponent(x[1])}`)
+      .map((x) => `${encodeURIComponent(x[0])}=${encodeURIComponent(x[1])}`)
       .join('&');
 
     if (method == 'post') {
@@ -549,7 +553,7 @@ class CRMAPI {
         url,
         asString,
         { 'Content-Type': 'application/x-www-form-urlencoded' },
-        cancelToken
+        cancelToken,
       );
     }
 
@@ -557,7 +561,7 @@ class CRMAPI {
       url,
       asString,
       { 'Content-Type': 'application/x-www-form-urlencoded' },
-      cancelToken
+      cancelToken,
     );
   }
 
@@ -577,7 +581,7 @@ class CRMAPI {
     purposes = [],
     products = [],
     content = '',
-    due_date
+    due_date,
   }) {
     const url = `${this._buildHost()}/${this.branches}/_cti/activity/task/${
       this.cn
@@ -671,7 +675,7 @@ class CRMAPI {
     customer,
     assignees,
     label_names,
-    phone
+    phone,
   }) {
     const url = `${this._buildHost()}/${this.branches}/_cti/helpdesk/tickets/${
       this.cn
@@ -713,7 +717,7 @@ class CRMAPI {
     email = '',
     phonetype = '1',
     phoneext = '',
-    withoutPhone = true
+    withoutPhone = true,
   }) {
     const kCountryCode = window.isKoreaMode ? '82' : '84';
 
@@ -756,7 +760,7 @@ class CRMAPI {
     offset,
     limit = 30,
     status,
-    direction
+    direction,
   }) {
     let values = [];
     values.push(`offset=${offset}`);
@@ -820,7 +824,7 @@ class CRMAPI {
     duration = 10,
     createDate,
     callId,
-    direction = 'INBOUND'
+    direction = 'INBOUND',
   }) {
     let url = `${this._buildHost()}/${this.branches}/_cti/activity/call/${
       this.cn
@@ -960,7 +964,7 @@ class CRMAPI {
               } else {
                 callback(true);
               }
-            }
+            },
           });
         } else {
           if (error || (error == null && response == null)) {
@@ -969,7 +973,7 @@ class CRMAPI {
             callback(true);
           }
         }
-      }
+      },
     });
   }
 

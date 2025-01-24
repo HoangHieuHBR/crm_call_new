@@ -72,6 +72,15 @@ export function saveDomainUserIDPassword(
   mode_country,
   extraData,
 ) {
+  console.log('saveDomainUserIDPassword', {
+    domain,
+    userId,
+    password,
+    extend,
+    autoLogin,
+    mode_country,
+    extraData,
+  });
   sendIPCSync(ACTION_SYNC_SAVE_ACCOUNT_INFO, {
     domain,
     userId,
@@ -133,10 +142,3 @@ export function demoCallKoService() {
   sendIPCAsync('TIENTH_DEMO_CALL_KO_SERVICE', null);
 }
 
-export function callCenterEvent(action, data) {
-  return ipcRenderer.send('crm_call_center_event', action, data);
-}
-
-export function callCenterEventResendCallId(data) {
-  return ipcRenderer.sendSync('crm_call_center_event_recent_callid', data);
-}

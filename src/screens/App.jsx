@@ -1,9 +1,9 @@
-import { useEffect } from 'react';
-import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Provider, useDispatch, useSelector } from 'react-redux';
+// import { ConnectedRouter } from 'connected-react-router';
 import { createTheme, LanguageSetting } from '../configs';
-import { RootState } from '../reducers';
-import { configureStore } from '../store';
+import { configureStore, history } from '../store';
 import { ThemeProvider } from '@material-ui/core/styles';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import DateFnsUtils from '@date-io/date-fns';
@@ -13,67 +13,18 @@ import * as ipc from '../utils/ipc';
 import * as Actions from '../actions';
 import * as constantsApp from '../configs/constant';
 import * as remote from '@electron/remote';
-import i18n from 'i18next';
-import { initReactI18next } from 'react-i18next';
-import './App.css';
-import CRMApi from '../core/service/vn/server.api';
+import { initI18n } from '../utils/i18n';
+import { initializeLogging } from '../utils/logging';
 
 import Login from './Login';
 import HomePage from './home';
 import Call from './Call';
-import { is } from 'date-fns/locale';
+import CRMApi from '../core/service/vn/server.api';
 
-window.currentDomainLog = 'unknown_render';
-const crmcallRenderLog = {
-  transports: {
-    console: {
-      format: '[{y}-{m}-{d} {h}:{i}:{s}] {text}',
-    },
-    file: {
-      archiveLog(oldFile) {
-        const info = require('path').parse(oldFile);
-        try {
-          const fs = require('fs');
-          let files = fs.readdirSync(info.dir);
-          let count = 0;
+// Initialize global logging
+initializeLogging();
 
-          for (const f of files) {
-            if (f.includes(window.currentDomainLog)) {
-              if (count <= 4) {
-                count++;
-              } else if (f !== `${window.currentDomainLog}.log`) {
-                fs.unlinkSync(require('path').join(info.dir, f));
-              }
-            }
-          }
-
-          fs.renameSync(
-            oldFile,
-            require('path').join(
-              info.dir,
-              `${info.name}_${new Date().toISOString().replace(/[:.]/g, '_')}${info.ext}`,
-            ),
-          );
-        } catch (e) {
-          console.warn('Could not rotate log', e);
-        }
-      },
-    },
-  },
-};
-
-window.crmcallRenderLog = crmcallRenderLog;
-
-const initializeI18n = (lang) => {
-  i18n.use(initReactI18next).init({
-    resources: LanguageSetting.resourcesLanguage,
-    lng: lang,
-    fallbackLng: LanguageSetting.defaultLanguage,
-    interpolation: {
-      escapeValue: false,
-    },
-  });
-};
+const store = configureStore();
 
 const loadSettings = (dispatch) => {
   const settings = [
@@ -104,12 +55,14 @@ function MainApp() {
   const lang = ipc.sendIPCSync(constantsApp.ACTION_SYNC_GET_LANGUAGE, null);
 
   useEffect(() => {
-    initializeI18n(lang);
+    initI18n(lang, LanguageSetting);
   }, [lang]);
 
   const dispatch = useDispatch();
   const auth = useSelector((state) => state.auth);
   const theme = createTheme();
+
+  console.log('auth.authentication >>> ', auth.authentication);
 
   useEffect(() => {
     loadSettings(dispatch);
@@ -139,7 +92,7 @@ function CallApp() {
   const lang = ipc.sendIPCSync(constantsApp.ACTION_SYNC_GET_LANGUAGE, null);
 
   useEffect(() => {
-    initializeI18n(lang);
+    initI18n(lang, LanguageSetting);
   }, [lang]);
 
   const dispatch = useDispatch();
@@ -162,7 +115,6 @@ function CallApp() {
 export default function App() {
   const mainElement = document.getElementById('root');
   const isRoot = mainElement?.id === 'root';
-  const store = configureStore();
 
   if (isRoot) {
     remote.getGlobal('ShareGlobalObject').attempDisableAutoLogin = false;
@@ -170,11 +122,11 @@ export default function App() {
 
   return (
     <Provider store={store}>
-      <Router>
+      <BrowserRouter>
         <Routes>
           <Route path="*" element={isRoot ? <MainApp /> : <CallApp />} />
         </Routes>
-      </Router>
+      </BrowserRouter>
     </Provider>
   );
 }

@@ -10,10 +10,13 @@ import CRMApi from './vn/server.api';
  */
 
 function customLog(...params) {
+  console.log('window.isFileLogger >>>', window.isFileLogger);
+  console.log('window.crmcallRenderLog >>>', window.crmcallRenderLog);
   if (window.isFileLogger && window.crmcallRenderLog != null) {
-    print('window.isFileLogger >>>', window.isFileLogger);
+    console.log('customLog run if');
     window.crmcallRenderLog.log(...params);
   } else {
+    console.log('customLog run else');
     // console.log(...params);
   }
 }

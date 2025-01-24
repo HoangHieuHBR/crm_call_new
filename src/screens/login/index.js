@@ -89,6 +89,11 @@ export default function Login() {
     const alreadyLogin = accountInfo?.alreadyLogin ?? false;
     const extraData = accountInfo?.extraData;
 
+    console.log('Domain:', domain);
+    console.log('User ID:', userid);
+    console.log('Password:', password);
+    console.log('Extend Number:', extendNumber);
+
     ipc.onIpcEvent(constantApp.MAIN_TO_RENDER_EVENT, nodeListener);
     crmcallServiceCenter.addListener(listener);
 
@@ -387,6 +392,8 @@ export default function Login() {
         setLoading(false);
         showAlert(t(data.errorMessage));
       } else if (data.code == constantApp.SOCKET_ERROR_CODE.login_success) {
+        console.log('LOGIN SUCCESS', data);
+
         const dataObj = data.data;
 
         let extraData;
