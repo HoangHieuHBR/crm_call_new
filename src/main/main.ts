@@ -29,38 +29,39 @@ import allTranslation from '../language/electron.lang';
 import windowStateKeeper from 'electron-window-state';
 import appPrefs from '../core/utils/pref';
 import * as windowSizeConfig from '../configs/window.size.config';
-import crmcallServiceCenter from '../core/service/ko/crmcallservice';
+import { CRMCallServiceCenter } from '../core/service/ko/crmcallservice';
 import CRMCallData from '../core/service/vn/crmcall.data';
-import { resolveHtmlPath } from './util';
+import { assetResourcePath, preloadPath, resolveHtmlPath } from './util';
 import { initialize, enable } from '@electron/remote/main';
-import eventEmitter from '../utils/eventEmitter';
+import * as appPlatform from '../utils/platform';
+import { browserWindowConfig, kMainWindowMinWidth } from '../common/configs';
 
 const WINDOWS_BG_COLOR = '#00000000';
 
-declare global {
-  var ShareGlobalObject: {
-    inLoginPage: boolean;
-    attempDisableAutoLogin: boolean;
-    loginGlobal: {
-      domain: string | null;
-      data: any | null;
-    };
-    isFileLogger: boolean;
-  };
-}
+// declare global {
+//   var ShareGlobalObject: {
+//     inLoginPage: boolean;
+//     attempDisableAutoLogin: boolean;
+//     loginGlobal: {
+//       domain: string | null;
+//       data: any | null;
+//     };
+//     isFileLogger: boolean;
+//   };
+// }
 
-function cloneObjGlobal() {
-  global.ShareGlobalObject = {
-    inLoginPage: true,
-    attempDisableAutoLogin: false,
-    loginGlobal: {
-      domain: null,
-      data: null,
-    },
-    isFileLogger: false,
-  };
-}
-cloneObjGlobal();
+// function cloneObjGlobal() {
+//   global.ShareGlobalObject = {
+//     inLoginPage: true,
+//     attempDisableAutoLogin: false,
+//     loginGlobal: {
+//       domain: null,
+//       data: null,
+//     },
+//     isFileLogger: false,
+//   };
+// }
+// cloneObjGlobal();
 
 class AppUpdater {
   constructor() {
@@ -118,17 +119,52 @@ if (!isPrimaryInstance) {
       });
   }
 
-  if (process.env.NODE_ENV === 'production') {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const isDebug =
+    process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
+
+  if (isProduction) {
     const sourceMapSupport = require('source-map-support');
     sourceMapSupport.install();
   }
 
-  const isDebug =
-    process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
-
   if (isDebug) {
     require('electron-debug')();
   }
+
+  var crmcallServiceCenter = new CRMCallServiceCenter({
+    appEmit: (event: string, actionName: string, data: any) => {
+      if (event === 'crm_call_center_event') {
+        sendEventToMainBrowserWindow(
+          constantsApp.MAIN_TO_RENDER_EVENT,
+          actionName,
+          data,
+        );
+        return;
+      }
+
+      if (event === 'crm_call_center_event_recent_callid') {
+        if (latestCallIDWindows) {
+          const newData = data.data;
+          if (newData) {
+            console.log('crm_call_center_event_recent_callid', newData);
+            crmcallServiceCenter.sendGetUserInfo({
+              callId: latestCallIDWindows,
+              phone: newData.number,
+              status: crmcallServiceCenter.currentMyStatus,
+            });
+          }
+
+          sendEventToCallBrowserWindowWithCallID(
+            constantsApp.MAIN_TO_RENDER_EVENT,
+            constantsApp.ACTION_UPDATE_DATA_FROM_MAIN,
+            latestCallIDWindows,
+            data,
+          );
+        }
+      }
+    },
+  });
 
   const installExtensions = async () => {
     const installer = require('electron-devtools-installer');
@@ -143,10 +179,9 @@ if (!isPrimaryInstance) {
   };
 
   function createTray() {
-    if (process.platform === 'darwin') {
+    if (appPlatform.isMac) {
     } else {
-      const iconImage =
-        process.platform == 'linux' ? 'icon_32.png' : 'icon.ico';
+      const iconImage = appPlatform.isLinux ? 'icon_32.png' : 'icon.ico';
       const image = nativeImage.createFromPath(
         path.join(__dirname, 'images', iconImage),
       );
@@ -168,14 +203,14 @@ if (!isPrimaryInstance) {
           },
         },
       ]);
-      if (process.platform === 'win32') {
+      if (appPlatform.isWindows) {
         tray.on('click', () => {
           if (mainWindow != null) {
             mainWindow.show();
           }
         });
       }
-      tray.setToolTip(allTranslation.text('HanbiroTalk'));
+      tray.setToolTip(allTranslation.text('CRMCall'));
       tray.setContextMenu(contextMenu);
     }
   }
@@ -197,6 +232,12 @@ if (!isPrimaryInstance) {
   }
 
   const createWindow = async () => {
+    const RESOURCES_PATH = assetResourcePath();
+
+    const getAssetPath = (...paths: string[]): string => {
+      return path.join(RESOURCES_PATH, ...paths);
+    };
+
     if (isDebug) {
       await installExtensions();
     }
@@ -206,43 +247,51 @@ if (!isPrimaryInstance) {
       defaultHeight: 728,
     });
 
-    let options: BrowserWindowConstructorOptions = {
+    // let options: BrowserWindowConstructorOptions = {
+    //   show: false,
+    //   x: mainWindowState.x,
+    //   y: mainWindowState.y,
+    //   width: mainWindowState.width,
+    //   height: mainWindowState.height,
+    //   webPreferences: {
+    //     webSecurity: isProduction,
+    //     allowRunningInsecureContent: true,
+    //     preload: preloadPath(),
+    //     contextIsolation: false,
+    //     nodeIntegrationInWorker: true,
+    //     nodeIntegration: true,
+    //     webviewTag: true,
+    //   },
+    //   minWidth: 800,
+    //   minHeight: 700,
+    // };
+
+    let icon = getAssetPath('icon.png');
+    if (appPlatform.isLinux) {
+      icon = getAssetPath('images', 'taskbar', 'icon_linux.png');
+    } else if (appPlatform.isWindows) {
+      icon = getAssetPath('images', 'taskbar', 'icon.ico');
+    }
+
+    mainWindow = new BrowserWindow({
       show: false,
       x: mainWindowState.x,
       y: mainWindowState.y,
       width: mainWindowState.width,
       height: mainWindowState.height,
-      webPreferences: {
-        sandbox: false,
-        webSecurity: false,
-        contextIsolation: false,
-        nodeIntegrationInWorker: true,
-        nodeIntegration: true,
-        webviewTag: true,
-      },
-      minWidth: 800,
+      backgroundColor: browserWindowConfig.backgroundColor,
+      minWidth: kMainWindowMinWidth,
       minHeight: 700,
-    };
-
-    if (process.platform == 'linux') {
-      options = {
-        ...options,
-        icon: path.join(__dirname, 'images', 'icon_linux.png'),
-      };
-    } else if (process.platform == 'darwin') {
-      options = {
-        ...options,
-        backgroundColor: WINDOWS_BG_COLOR,
-      };
-    } else {
-      options = {
-        ...options,
-        backgroundColor: WINDOWS_BG_COLOR,
-        icon: path.join(__dirname, 'images', 'icon.ico'),
-      };
-    }
-
-    mainWindow = new BrowserWindow(options);
+      icon: icon,
+      webPreferences: {
+        nodeIntegration: appPlatform.webPreferencesConfig.nodeIntegration,
+        webSecurity: isProduction,
+        allowRunningInsecureContent: true,
+        preload: preloadPath(),
+        webviewTag: true,
+        contextIsolation: false,
+      },
+    });
 
     mainWindowState.manage(mainWindow);
 
@@ -277,7 +326,7 @@ if (!isPrimaryInstance) {
     });
 
     mainWindow.addListener('focus', () => {
-      if (!global.ShareGlobalObject.inLoginPage) {
+      if (crmcallServiceCenter.isInLoginPage) {
         resumeMessengerCenterService(true);
       }
     });
@@ -296,7 +345,7 @@ if (!isPrimaryInstance) {
     });
 
     mainWindow.on('close', (event) => {
-      if (!isQuiting && !global.ShareGlobalObject.inLoginPage) {
+      if (!isQuiting && crmcallServiceCenter.isInLoginPage) {
         event.preventDefault();
         if (mainWindow != null) {
           if (mainWindow.isFullScreen()) {
@@ -376,8 +425,7 @@ if (!isPrimaryInstance) {
       fullscreenable: false,
       resizable: false,
       webPreferences: {
-        sandbox: false,
-        webSecurity: false,
+        webSecurity: isProduction,
         contextIsolation: false,
         nodeIntegrationInWorker: true,
         nodeIntegration: true,
@@ -668,7 +716,7 @@ if (!isPrimaryInstance) {
           createWindow();
         } else {
           mainWindow.show();
-          if (process.platform === 'darwin') {
+          if (appPlatform.isMac) {
             Object.values(callWindowsMap).forEach((window) => {
               if (window) {
                 window.moveTop();
@@ -680,35 +728,35 @@ if (!isPrimaryInstance) {
     })
     .catch(console.log);
 
-  eventEmitter.on('crm_call_center_event', (action, data) => {
-    console.log('crm_call_center_event', action, data);
-    sendEventToMainBrowserWindow(
-      constantsApp.MAIN_TO_RENDER_EVENT,
-      action,
-      data,
-    );
-  });
+  // eventEmitter.on('crm_call_center_event', (action, data) => {
+  //   console.log('crm_call_center_event', action, data);
+  //   sendEventToMainBrowserWindow(
+  //     constantsApp.MAIN_TO_RENDER_EVENT,
+  //     action,
+  //     data,
+  //   );
+  // });
 
-  eventEmitter.on('crm_call_center_event_recent_callid', (data) => {
-    if (latestCallIDWindows) {
-      const newData = data.data;
-      if (newData) {
-        console.log('crm_call_center_event_recent_callid', newData);
-        crmcallServiceCenter.sendGetUserInfo({
-          callId: latestCallIDWindows,
-          phone: newData.number,
-          status: crmcallServiceCenter.currentMyStatus,
-        });
-      }
+  // eventEmitter.on('crm_call_center_event_recent_callid', (data) => {
+  //   if (latestCallIDWindows) {
+  //     const newData = data.data;
+  //     if (newData) {
+  //       console.log('crm_call_center_event_recent_callid', newData);
+  //       crmcallServiceCenter.sendGetUserInfo({
+  //         callId: latestCallIDWindows,
+  //         phone: newData.number,
+  //         status: crmcallServiceCenter.currentMyStatus,
+  //       });
+  //     }
 
-      sendEventToCallBrowserWindowWithCallID(
-        constantsApp.MAIN_TO_RENDER_EVENT,
-        constantsApp.ACTION_UPDATE_DATA_FROM_MAIN,
-        latestCallIDWindows,
-        data,
-      );
-    }
-  });
+  //     sendEventToCallBrowserWindowWithCallID(
+  //       constantsApp.MAIN_TO_RENDER_EVENT,
+  //       constantsApp.ACTION_UPDATE_DATA_FROM_MAIN,
+  //       latestCallIDWindows,
+  //       data,
+  //     );
+  //   }
+  // });
 
   // ipcMain.on('crm_call_center_event', (event, { action, data }) => {
   //   console.log('crm_call_center_event', action, data);

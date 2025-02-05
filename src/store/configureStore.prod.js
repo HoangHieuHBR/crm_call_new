@@ -18,11 +18,11 @@
 
 import { createStore, applyMiddleware, compose } from 'redux';
 import createSagaMiddleware from 'redux-saga';
-import { createHashHistory } from 'history';
+// import { createHashHistory } from 'history';
 import { createLogger } from 'redux-logger';
 import createRootReducer from '../reducers';
 
-const history = createHashHistory();
+// const history = createHashHistory();
 const sagaMiddleware = createSagaMiddleware();
 const rootReducer = createRootReducer();
 

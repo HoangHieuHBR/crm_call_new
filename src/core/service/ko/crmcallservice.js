@@ -20,13 +20,13 @@ import {
   CALL_DIRECTION,
 } from '../../../configs/constant';
 import * as CRMPacket from './xml/crmpacket';
-import eventEmitter from '../../../utils/eventEmitter';
 
 var safeRetryLiveTimeout = 0;
 var ForwardCallInfo = {};
 
-class CRMCallServiceCenter {
-  constructor() {
+export class CRMCallServiceCenter {
+  constructor({ appEmit }) {
+    this.mainAppEmit = appEmit;
     this.lastLoginTime = 0;
     this.iamLogout = false;
     this.connecting = false;
@@ -50,6 +50,8 @@ class CRMCallServiceCenter {
     this.timeoutRelogin = null;
 
     this.timeoutPingList = [];
+
+    this.isInLoginPage = true;
   }
 
   updateLoginResultObject(obj) {
@@ -106,14 +108,12 @@ class CRMCallServiceCenter {
 
   _broadcastListener(action, data) {
     // app.emit('crm_call_center_event', action, data);
-    eventEmitter.emit('crm_call_center_event', action, data);
-    // ipcRenderer.send('crm_call_center_event', action, data);
+    this.mainAppEmit('crm_call_center_event', action, data);
   }
 
   _broadcastListenerToRecentCallWindows(data) {
     // app.emit('crm_call_center_event_recent_callid', data);
-    eventEmitter.emit('crm_call_center_event_recent_callid', data);
-    // ipcRenderer.sendSync('crm_call_center_event_recent_callid', data);
+    this.mainAppEmit('crm_call_center_event_recent_callid', data);
   }
 
   disconnectService() {
@@ -945,5 +945,5 @@ const PacketListener = {
   },
 };
 
-const crmcallServiceCenter = new CRMCallServiceCenter();
-export default crmcallServiceCenter;
+// const crmcallServiceCenter = new CRMCallServiceCenter();
+// export default crmcallServiceCenter;

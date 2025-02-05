@@ -78,7 +78,7 @@ export default function Login() {
   const classes = useStyles();
   const { t } = useTranslation();
 
-  React.useEffect(() => {
+  useEffect(() => {
     const accountInfo = ipc.getDomainUserIDPassword();
     const domain = accountInfo?.domain ?? '';
     const userid = accountInfo?.userId ?? '';
@@ -88,11 +88,6 @@ export default function Login() {
     const modecountry = accountInfo?.mode_country;
     const alreadyLogin = accountInfo?.alreadyLogin ?? false;
     const extraData = accountInfo?.extraData;
-
-    console.log('Domain:', domain);
-    console.log('User ID:', userid);
-    console.log('Password:', password);
-    console.log('Extend Number:', extendNumber);
 
     ipc.onIpcEvent(constantApp.MAIN_TO_RENDER_EVENT, nodeListener);
     crmcallServiceCenter.addListener(listener);

@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { Provider, useDispatch, useSelector } from 'react-redux';
-// import { ConnectedRouter } from 'connected-react-router';
 import { createTheme, LanguageSetting } from '../configs';
 import { configureStore, history } from '../store';
 import { ThemeProvider } from '@material-ui/core/styles';
@@ -13,8 +12,9 @@ import * as ipc from '../utils/ipc';
 import * as Actions from '../actions';
 import * as constantsApp from '../configs/constant';
 import * as remote from '@electron/remote';
-import { initI18n } from '../utils/i18n';
 import { initializeLogging } from '../utils/logging';
+import { initReactI18next } from 'react-i18next';
+import i18next from 'i18next';
 
 import Login from './Login';
 import HomePage from './home';
@@ -23,6 +23,14 @@ import CRMApi from '../core/service/vn/server.api';
 
 // Initialize global logging
 initializeLogging();
+
+i18next.use(initReactI18next).init({
+  resources: LanguageSetting.resourcesLanguage,
+  fallbackLng: LanguageSetting.defaultLanguage,
+  interpolation: {
+    escapeValue: false,
+  },
+});
 
 const store = configureStore();
 
@@ -55,7 +63,7 @@ function MainApp() {
   const lang = ipc.sendIPCSync(constantsApp.ACTION_SYNC_GET_LANGUAGE, null);
 
   useEffect(() => {
-    initI18n(lang, LanguageSetting);
+    i18next.changeLanguage(lang);
   }, [lang]);
 
   const dispatch = useDispatch();
@@ -92,7 +100,7 @@ function CallApp() {
   const lang = ipc.sendIPCSync(constantsApp.ACTION_SYNC_GET_LANGUAGE, null);
 
   useEffect(() => {
-    initI18n(lang, LanguageSetting);
+    i18next.changeLanguage(lang);
   }, [lang]);
 
   const dispatch = useDispatch();
@@ -122,11 +130,9 @@ export default function App() {
 
   return (
     <Provider store={store}>
-      <BrowserRouter>
-        <Routes>
-          <Route path="*" element={isRoot ? <MainApp /> : <CallApp />} />
-        </Routes>
-      </BrowserRouter>
+      <Routes>
+        <Route path="*" element={isRoot ? <MainApp /> : <CallApp />} />
+      </Routes>
     </Provider>
   );
 }
