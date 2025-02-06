@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { BrowserRouter } from 'react-router-dom';
 import { Provider, useDispatch, useSelector } from 'react-redux';
 import { createTheme, LanguageSetting } from '../configs';
-import { configureStore, history } from '../store';
+import store from '../store';
 import { ThemeProvider } from '@material-ui/core/styles';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import DateFnsUtils from '@date-io/date-fns';
@@ -12,7 +12,7 @@ import * as ipc from '../utils/ipc';
 import * as Actions from '../actions';
 import * as constantsApp from '../configs/constant';
 import * as remote from '@electron/remote';
-import { initializeLogging } from '../utils/logging';
+// import { initializeLogging } from '../utils/logging';
 import { initReactI18next } from 'react-i18next';
 import i18next from 'i18next';
 
@@ -22,7 +22,7 @@ import Call from './Call';
 import CRMApi from '../core/service/vn/server.api';
 
 // Initialize global logging
-initializeLogging();
+// initializeLogging();
 
 i18next.use(initReactI18next).init({
   resources: LanguageSetting.resourcesLanguage,
@@ -32,7 +32,7 @@ i18next.use(initReactI18next).init({
   },
 });
 
-const store = configureStore();
+// const store = configureStore();
 
 const loadSettings = (dispatch) => {
   const settings = [
@@ -61,20 +61,19 @@ const loadSettings = (dispatch) => {
 
 function MainApp() {
   const lang = ipc.sendIPCSync(constantsApp.ACTION_SYNC_GET_LANGUAGE, null);
+  const dispatch = useDispatch();
+  const auth = useSelector((state) => state.auth);
+  const theme = createTheme();
 
   useEffect(() => {
     i18next.changeLanguage(lang);
   }, [lang]);
 
-  const dispatch = useDispatch();
-  const auth = useSelector((state) => state.auth);
-  const theme = createTheme();
-
-  console.log('auth.authentication >>> ', auth.authentication);
-
   useEffect(() => {
     loadSettings(dispatch);
   }, [dispatch]);
+
+  console.log('auth.authentication >>> ', auth.authentication);
 
   return (
     <ThemeProvider theme={theme}>
@@ -98,13 +97,12 @@ function CallApp() {
   }
 
   const lang = ipc.sendIPCSync(constantsApp.ACTION_SYNC_GET_LANGUAGE, null);
+  const dispatch = useDispatch();
+  const theme = createTheme();
 
   useEffect(() => {
     i18next.changeLanguage(lang);
   }, [lang]);
-
-  const dispatch = useDispatch();
-  const theme = createTheme();
 
   useEffect(() => {
     loadSettings(dispatch);
@@ -124,15 +122,13 @@ export default function App() {
   const mainElement = document.getElementById('root');
   const isRoot = mainElement?.id === 'root';
 
-  if (isRoot) {
-    remote.getGlobal('ShareGlobalObject').attempDisableAutoLogin = false;
-  }
+  // if (isRoot) {
+  //   remote.getGlobal('ShareGlobalObject').attempDisableAutoLogin = false;
+  // }
 
   return (
     <Provider store={store}>
-      <Routes>
-        <Route path="*" element={isRoot ? <MainApp /> : <CallApp />} />
-      </Routes>
+      <BrowserRouter>{isRoot ? <MainApp /> : <CallApp />}</BrowserRouter>
     </Provider>
   );
 }

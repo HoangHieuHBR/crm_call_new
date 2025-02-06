@@ -1,6 +1,14 @@
 // Disable no-unused-vars, broken for spread args
 /* eslint no-unused-vars: off */
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
+import { platform } from 'node:os';
+import { TNWindowOSType } from '../common/electron.types';
+import {
+  MainChannels,
+  MainChannelsAction,
+  MainSyncChannels,
+  MainSyncChannelsAction,
+} from '../common/channels';
 
 export type Channels = 'ipc-example';
 
@@ -38,11 +46,42 @@ const electronHandler = {
       ipcRenderer.removeAllListeners(channel);
     },
   },
+  platform: {
+    appPlatform(): TNWindowOSType {
+      if (process.platform == 'win32') {
+        return 'win32';
+      }
+      if (process.platform == 'linux') {
+        return 'linux';
+      }
+      if (process.platform == 'darwin') {
+        return 'darwin';
+      }
+      return 'win32';
+    },
+    /**
+     * get url of html file - auto detect localhost or production
+     * @returns string -> ex: http://localhost:1212/index.html
+     */
+    assetAppDir() {
+      return ipcRenderer.sendSync(
+        MainSyncChannels,
+        MainSyncChannelsAction.AssetDir,
+        {},
+      );
+    },
+    /**
+     * log params to file render. it useful for check log on production
+     * @return  void
+     */
+    logFile(...params: any) {
+      ipcRenderer.send(MainChannels, MainChannelsAction.logFile, params);
+    },
+  },
 };
 
 // contextBridge.exposeInMainWorld('electron', electronHandler);
 
 window.electron = electronHandler;
-
 
 export type ElectronHandler = typeof electronHandler;

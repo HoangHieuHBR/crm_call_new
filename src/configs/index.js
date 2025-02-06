@@ -1,4 +1,4 @@
-import { LanguageSetting } from './language';
+import { LanguageSetting } from '../renderer/resources/language';
 import {
   createTheme,
   FontSupport,

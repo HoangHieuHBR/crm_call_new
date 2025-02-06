@@ -25,7 +25,7 @@ import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
 import * as constantsApp from '../configs/constant';
-import allTranslation from '../language/electron.lang';
+import allTranslation from './language';
 import windowStateKeeper from 'electron-window-state';
 import appPrefs from '../core/utils/pref';
 import * as windowSizeConfig from '../configs/window.size.config';
@@ -35,33 +35,46 @@ import { assetResourcePath, preloadPath, resolveHtmlPath } from './util';
 import { initialize, enable } from '@electron/remote/main';
 import * as appPlatform from '../utils/platform';
 import { browserWindowConfig, kMainWindowMinWidth } from '../common/configs';
+import { configGlobalLogMain, configLoggerMain } from '../utils/logging';
 
 const WINDOWS_BG_COLOR = '#00000000';
 
-// declare global {
-//   var ShareGlobalObject: {
-//     inLoginPage: boolean;
-//     attempDisableAutoLogin: boolean;
-//     loginGlobal: {
-//       domain: string | null;
-//       data: any | null;
-//     };
-//     isFileLogger: boolean;
-//   };
-// }
+declare global {
+  var ShareGlobalObject: {
+    inLoginPage: boolean;
+    attempDisableAutoLogin: boolean;
+    loginGlobal: {
+      domain: string | null;
+      data: any | null;
+    };
+    isFileLogger: boolean;
+  };
+}
 
-// function cloneObjGlobal() {
-//   global.ShareGlobalObject = {
-//     inLoginPage: true,
-//     attempDisableAutoLogin: false,
-//     loginGlobal: {
-//       domain: null,
-//       data: null,
-//     },
-//     isFileLogger: false,
-//   };
-// }
-// cloneObjGlobal();
+function cloneObjGlobal() {
+  global.ShareGlobalObject = {
+    inLoginPage: true,
+    attempDisableAutoLogin: false,
+    loginGlobal: {
+      domain: null,
+      data: null,
+    },
+    isFileLogger: false,
+  };
+}
+cloneObjGlobal();
+
+const RESOURCES_PATH = app.isPackaged
+  ? path.join(process.resourcesPath, 'assets')
+  : path.join(__dirname, '../../assets');
+
+const trayIconName = appPlatform.isWindows
+  ? 'window.ico'
+  : appPlatform.isMac
+    ? 'mac.png'
+    : 'linux.png';
+const trayIconPath = path.join(RESOURCES_PATH, 'trays', trayIconName);
+const trayIcon = nativeImage.createFromPath(trayIconPath);
 
 class AppUpdater {
   constructor() {
@@ -70,6 +83,10 @@ class AppUpdater {
     autoUpdater.checkForUpdatesAndNotify();
   }
 }
+
+// config logger
+configLoggerMain();
+// end config logger
 
 const isPrimaryInstance = app.requestSingleInstanceLock();
 
@@ -166,6 +183,8 @@ if (!isPrimaryInstance) {
     },
   });
 
+  configGlobalLogMain(crmcallServiceCenter);
+
   const installExtensions = async () => {
     const installer = require('electron-devtools-installer');
     const forceDownload = !!process.env.UPGRADE_EXTENSIONS;
@@ -181,11 +200,7 @@ if (!isPrimaryInstance) {
   function createTray() {
     if (appPlatform.isMac) {
     } else {
-      const iconImage = appPlatform.isLinux ? 'icon_32.png' : 'icon.ico';
-      const image = nativeImage.createFromPath(
-        path.join(__dirname, 'images', iconImage),
-      );
-      tray = new Tray(image);
+      tray = new Tray(trayIcon);
       const contextMenu = Menu.buildFromTemplate([
         {
           label: allTranslation.text('Open'),
@@ -210,9 +225,23 @@ if (!isPrimaryInstance) {
           }
         });
       }
-      tray.setToolTip(allTranslation.text('CRMCall'));
-      tray.setContextMenu(contextMenu);
+      tray?.setContextMenu(contextMenu);
+
+      // reloadTray();
+      _updateTrayTooltip();
     }
+  }
+
+  function reloadTray() {
+    if (tray && !tray!.isDestroyed()) {
+      createTray();
+      _updateTrayTooltip();
+    }
+  }
+
+  function _updateTrayTooltip() {
+    tray?.setToolTip(allTranslation.text('CRMCall'));
+    tray?.setImage(trayIcon);
   }
 
   function destroyTray() {
@@ -238,9 +267,9 @@ if (!isPrimaryInstance) {
       return path.join(RESOURCES_PATH, ...paths);
     };
 
-    if (isDebug) {
-      await installExtensions();
-    }
+    // if (isDebug) {
+    //   await installExtensions();
+    // }
 
     let mainWindowState = windowStateKeeper({
       defaultWidth: 1444,
@@ -287,14 +316,13 @@ if (!isPrimaryInstance) {
         nodeIntegration: appPlatform.webPreferencesConfig.nodeIntegration,
         webSecurity: isProduction,
         allowRunningInsecureContent: true,
-        preload: preloadPath(),
+        // preload: preloadPath(),
         webviewTag: true,
         contextIsolation: false,
       },
     });
 
     mainWindowState.manage(mainWindow);
-
     mainWindow.loadURL(resolveHtmlPath('index.html'));
 
     enable(mainWindow.webContents);
@@ -373,11 +401,11 @@ if (!isPrimaryInstance) {
     if (lang == null || lang == '') {
       const locale = app.getLocale();
       appPrefs.setLanguage(locale, (langCode: string) => {
-        allTranslation.setLanguage(__dirname, langCode);
+        allTranslation.setLanguage(langCode);
       });
     } else {
       appPrefs.updateLanguageCode(lang, (langCode: string) => {
-        allTranslation.setLanguage(__dirname, langCode);
+        allTranslation.setLanguage(langCode);
       });
     }
 
@@ -425,11 +453,10 @@ if (!isPrimaryInstance) {
       fullscreenable: false,
       resizable: false,
       webPreferences: {
+        nodeIntegration: true,
         webSecurity: isProduction,
         contextIsolation: false,
-        nodeIntegrationInWorker: true,
-        nodeIntegration: true,
-        webviewTag: true,
+        // preload: '',
       },
       minWidth: 400,
       minHeight: 300,
@@ -930,7 +957,7 @@ if (!isPrimaryInstance) {
         event.returnValue = appPrefs.getLanguageDef();
       } else if (action == constantsApp.ACTION_SYNC_SET_LANGUAGE) {
         appPrefs.setLanguage(data, (langCode: string) => {
-          allTranslation.setLanguage(__dirname, langCode);
+          allTranslation.setLanguage(langCode);
           destroyTray();
           createTray();
           setupMenuBar();

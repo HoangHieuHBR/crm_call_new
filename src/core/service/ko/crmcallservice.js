@@ -261,7 +261,7 @@ export class CRMCallServiceCenter {
     this._setupLog();
     this.tcpSocket = new TCPConnection();
     this.tcpSocket.saveLogger = this.serverInfo.saveLogger;
-    global.ShareGlobalObject.isFileLogger = this.serverInfo.saveLogger;
+    // global.ShareGlobalObject.isFileLogger = this.serverInfo.saveLogger;
     this.tcpSocket.connectWithIpPort(this.serverInfo.ip, this.serverInfo.port, {
       socketConnected: () => {
         let loginPacket;

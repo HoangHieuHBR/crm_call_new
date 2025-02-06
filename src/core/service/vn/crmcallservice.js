@@ -180,7 +180,7 @@ class CRMCallServiceCenter {
     this._setupLog();
     this.hanSocket = new HanSocket();
     this.hanSocket.saveLogger = this.serverInfo.saveLogger;
-    global.ShareGlobalObject.isFileLogger = this.serverInfo.saveLogger;
+    // global.ShareGlobalObject.isFileLogger = this.serverInfo.saveLogger;
     this.hanSocket.connectWithIpPort(this.serverInfo.ip, this.serverInfo.port, {
       socketConnected: () => {
         let loginPacket;

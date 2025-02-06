@@ -180,7 +180,7 @@ export default function Login() {
   }, []);
 
   const setLoginPageIsShow = (show) => {
-    remote.getGlobal('ShareGlobalObject').inLoginPage = show;
+    // remote.getGlobal('ShareGlobalObject').inLoginPage = show;
   };
 
   const isAttempDisableAutoLogin = () => {
